@@ -234,11 +234,26 @@
         let activeUser = null;
         let currentFisa = null;
 
-        function getRoTime() {
-            const now = new Date();
-            const roStr = now.toLocaleString("sv-SE", { timeZone: "Europe/Bucharest" }); 
-            return roStr.substring(0, 16).replace(" ", "T");
-        }
+       function getRoTime() {
+    const now = new Date();
+    
+    // Configurăm un formator care extrage componentele exacte pentru România
+    const formatter = new Intl.DateTimeFormat('sv-SE', {
+        timeZone: 'Europe/Bucharest',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+
+    // Formatăm data (va rezulta ceva de genul "2024-03-04 14:30")
+    const parts = formatter.format(now);
+    
+    // Transformăm în formatul acceptat de input-ul datetime-local (înlocuim spațiul cu T)
+    return parts.replace(" ", "T");
+}
 
         window.onload = () => {
             const saved = localStorage.getItem('geeli_session');
@@ -529,7 +544,7 @@
                             <p><b class="font-black">TEL:</b> ${f.tel_client || '-'}</p>
                             <p><b class="font-black">EMAIL:</b> ${f.email_client || '-'}</p>
                             <p><b class="font-black">ADRESA:</b> ${f.adresa_client || '-'}</p>
-                            <p><b class="font-black">DATA ÎNREGISTRARE:</b> ${f.created_at ? new Date(f.created_at).toLocaleString('ro-RO') : '-'}</p>
+                            <p><b class="font-black">DATA ÎNREGISTRARE:</b> ${f.created_at ? new Date(f.created_at).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</p>
                         </div>
                         <div class="space-y-2">
                             <h4 class="font-black border-b-2 border-slate-900 text-slate-900 uppercase text-[11px] pb-1 tracking-widest">2. Date Produs</h4>
@@ -703,5 +718,6 @@
 </body>
 
 </html>
+
 
 
