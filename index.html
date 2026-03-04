@@ -234,25 +234,18 @@
         let activeUser = null;
         let currentFisa = null;
 
-       function getRoTime() {
+      function getRoTime() {
     const now = new Date();
+    // LINIA MODIFICATĂ: Scădem 2 ore (2 ore * 60 min * 60 sec * 1000 ms)
+    const correctedTime = new Date(now.getTime() - (2 * 60 * 60 * 1000));
     
-    // Configurăm un formator care extrage componentele exacte pentru România
-    const formatter = new Intl.DateTimeFormat('sv-SE', {
-        timeZone: 'Europe/Bucharest',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    });
-
-    // Formatăm data (va rezulta ceva de genul "2024-03-04 14:30")
-    const parts = formatter.format(now);
+    const year = correctedTime.getFullYear();
+    const month = String(correctedTime.getMonth() + 1).padStart(2, '0');
+    const day = String(correctedTime.getDate()).padStart(2, '0');
+    const hours = String(correctedTime.getHours()).padStart(2, '0');
+    const minutes = String(correctedTime.getMinutes()).padStart(2, '0');
     
-    // Transformăm în formatul acceptat de input-ul datetime-local (înlocuim spațiul cu T)
-    return parts.replace(" ", "T");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
         window.onload = () => {
@@ -544,7 +537,7 @@
                             <p><b class="font-black">TEL:</b> ${f.tel_client || '-'}</p>
                             <p><b class="font-black">EMAIL:</b> ${f.email_client || '-'}</p>
                             <p><b class="font-black">ADRESA:</b> ${f.adresa_client || '-'}</p>
-                            <p><b class="font-black">DATA ÎNREGISTRARE:</b> ${f.created_at ? new Date(f.created_at).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</p>
+                            <p><b class="font-black">DATA ÎNREGISTRARE:</b> ${f.created_at ? new Date(f.created_at).toLocaleString('ro-RO') : '-'}</p>
                         </div>
                         <div class="space-y-2">
                             <h4 class="font-black border-b-2 border-slate-900 text-slate-900 uppercase text-[11px] pb-1 tracking-widest">2. Date Produs</h4>
@@ -718,6 +711,7 @@
 </body>
 
 </html>
+
 
 
 
