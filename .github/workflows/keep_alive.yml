@@ -1,0 +1,17 @@
+name: Supabase Keep Alive (Ping)
+
+on:
+  schedule:
+    # Rulează automat în fiecare luni și joi la ora 09:00 dimineața
+    - cron: '0 9 * * 1,4'
+  workflow_dispatch: # Îți permite să îl pornești tu manual oricând pentru test
+
+jobs:
+  ping_supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trimite cerere către Supabase
+        run: |
+          curl -X GET "${{ secrets.MY_SUPABASE_URL }}/rest/v1/profiles?select=id&limit=1" \
+          -H "apikey: ${{ secrets.MY_SUPABASE_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.MY_SUPABASE_KEY }}"
