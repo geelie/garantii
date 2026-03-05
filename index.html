@@ -236,8 +236,7 @@
 
       function getRoTime() {
     const now = new Date();
-    // LINIA MODIFICATĂ: Scădem 2 ore (2 ore * 60 min * 60 sec * 1000 ms)
-    const correctedTime = new Date(now.getTime() - (2 * 60 * 60 * 1000));
+    const correctedTime = new Date(now.getTime());
     
     const year = correctedTime.getFullYear();
     const month = String(correctedTime.getMonth() + 1).padStart(2, '0');
@@ -753,6 +752,7 @@ async function handleRegister() {
 </body>
 
 </html>
+
 
 
 
