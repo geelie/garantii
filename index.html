@@ -329,18 +329,43 @@
             localStorage.removeItem('geeli_session');
             location.reload();
         }
+async function handleRegister() {
+    // Colectăm datele introduse în formular
+    const nume = document.getElementById('r-full').value.trim();
+    const user = document.getElementById('r-user').value.trim();
+    const pass = document.getElementById('r-pass').value.trim();
+    const serv = document.getElementById('r-service').value;
 
-        async function handleRegister() {
-            const profile = {
-                nume_complet: document.getElementById('r-full').value,
-                username: document.getElementById('r-user').value,
-                password: document.getElementById('r-pass').value,
-                service: document.getElementById('r-service').value,
-                rol: (document.getElementById('r-user').value.toLowerCase().includes('admin')) ? 'admin' : 'user'
-            };
-            await _supa.from('profiles').insert([profile]);
-            showAuth('login');
-        }
+    // Validare simplă pentru a preveni trimiterea de câmpuri goale
+    if (!nume || !user || !pass) {
+        alert("Toate câmpurile sunt obligatorii!");
+        return;
+    }
+
+    const profile = {
+        nume_complet: nume,
+        username: user,
+        password: pass,
+        service: serv,
+        // Stabilim rolul inițial ca 'none' pentru securitate
+        rol: (user.toLowerCase().includes('admin')) ? 'admin' : 'none'
+    };
+
+    // Trimitem datele către Supabase
+    const { data, error } = await _supa.from('profiles').insert([profile]).select();
+
+    if (error) {
+        console.error("Eroare Supabase:", error);
+        alert("Eroare la crearea contului: " + error.message);
+    } else {
+        alert("Cont creat cu succes! Așteptați activarea de către un administrator.");
+        // Curățăm formularul și ne întoarcem la logare
+        document.getElementById('r-full').value = '';
+        document.getElementById('r-user').value = '';
+        document.getElementById('r-pass').value = '';
+        showAuth('login');
+    }
+}
 
         async function loadUsers() {
             if(activeUser.rol !== 'admin') return;
@@ -353,8 +378,11 @@
                     <td class="p-5 font-mono font-bold text-blue-600">${u.username}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${u.service}</td>
                     <td class="p-5">
-                        <span class="px-2 py-1 rounded text-[10px] font-black uppercase ${u.rol==='admin'?'bg-purple-600 text-white':'bg-slate-400 text-white'}">${u.rol}</span>
-                    </td>
+    <span class="px-2 py-1 rounded text-[10px] font-black uppercase text-white 
+        ${u.rol === 'admin' ? 'bg-red-600' : (u.rol === 'user' ? 'bg-green-600' : 'bg-slate-500')}">
+        ${u.rol || 'none'}
+    </span>
+</td>
                     <td class="p-5 text-center flex gap-2 justify-center">
                         ${u.username !== activeUser.username ? `
                             <button onclick="toggleUserRole('${u.id}', '${u.rol}')" class="bg-blue-100 text-blue-600 px-3 py-1 rounded-lg font-black text-[10px] hover:bg-blue-600 hover:text-white transition">SCHIMBĂ ROL</button>
@@ -365,13 +393,22 @@
             });
         }
 
-        async function toggleUserRole(id, currentRole) {
-            const newRole = currentRole === 'admin' ? 'user' : 'admin';
-            if(confirm(`Schimbi rolul utilizatorului în "${newRole.toUpperCase()}"?`)) {
-                await _supa.from('profiles').update({ rol: newRole }).eq('id', id);
-                loadUsers();
-            }
-        }
+      async function toggleUserRole(id, currentRole) {
+    let newRole;
+    // Ciclul: none -> user -> admin -> none
+    if (currentRole === 'none' || !currentRole) {
+        newRole = 'user';
+    } else if (currentRole === 'user') {
+        newRole = 'admin';
+    } else {
+        newRole = 'none';
+    }
+
+    if(confirm(`Schimbi nivelul de acces în: ${newRole.toUpperCase()}?`)) {
+        await _supa.from('profiles').update({ rol: newRole }).eq('id', id);
+        loadUsers();
+    }
+}
 
         async function deleteUser(username) {
             if(confirm(`Ești sigur că vrei să ștergi utilizatorul "${username}"?`)) {
@@ -380,7 +417,12 @@
             }
         }
 
-        async function loadFise() {
+       async function loadFise() {
+    // Dacă rolul este 'none', nu încărcăm datele
+    if(activeUser.rol === 'none') {
+        document.getElementById('fise-rows').innerHTML = '<tr><td colspan="7" class="p-10 text-center font-black text-red-600 uppercase">Cont neactivat. Contactați un administrator.</td></tr>';
+        return;
+    }
             let q = _supa.from('fise').select('*');
             if(activeUser.rol !== 'admin') q = q.eq('alocat_catre', activeUser.service);
             
@@ -711,7 +753,6 @@
 </body>
 
 </html>
-
 
 
 
