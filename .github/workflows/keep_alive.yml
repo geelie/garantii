@@ -2,9 +2,9 @@ name: Supabase Keep Alive (Ping)
 
 on:
   schedule:
-    # Rulează automat în fiecare luni și joi la ora 09:00 dimineața
-    - cron: '0 9 * * 1,4'
-  workflow_dispatch: # Îți permite să îl pornești tu manual oricând pentru test
+    # Rulează în fiecare zi la ora 09:00 dimineața
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Îți permite să îl pornești manual oricând
 
 jobs:
   ping_supabase:
