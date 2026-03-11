@@ -92,9 +92,9 @@
                 <input type="password" id="r-pass" placeholder="Parolă" class="w-full p-3 border-2 border-slate-200 rounded-lg">
                 <select id="r-service" class="w-full p-3 border-2 border-slate-200 rounded-lg font-bold bg-slate-50">
                     <option value="Propriu">1. Service Propriu</option>
-                    <option value="Ridicare1">2. RIDICARE1</option>
-                    <option value="Ridicare2">3. RIDICARE2</option>
-                    <option value="Ridicare3">4. RIDICARE3</option>
+                    <option value="SERVICE PROPRIU 1">2. SERVICE PROPRIU 1</option>
+                    <option value="SERVICE PROPRIU 2">3. SERVICE PROPRIU 2</option>
+                    <option value="RIDICARE">4. RIDICARE</option>
                     <option value="BUXI PROFESIONAL">5. BUXI PROFESIONAL</option>
                     <option value="MIXX MOTION">6. MIXX MOTION</option>
                     <option value="PGC GRAND TOTAL">7. PGC GRAND TOTAL</option>
@@ -554,7 +554,7 @@
             document.getElementById('admin-delete-btn').classList.toggle('hidden', activeUser.rol !== 'admin');
             const vch = calcVechime(f.data_preluare_fizica);
             const canEditReport = (activeUser.rol === 'admin' || (activeUser.service === f.alocat_catre && f.status === 'În lucru'));
-            const isPropriuType = (f.alocat_catre === 'Propriu' || f.alocat_catre === 'Ridicare1' || f.alocat_catre === 'Ridicare2' || f.alocat_catre === 'Ridicare3');
+            const isPropriuType = (f.alocat_catre === 'Propriu' || f.alocat_catre === 'SERVICE PROPRIU 1' || f.alocat_catre === 'SERVICE PROPRIU 2' || f.alocat_catre === 'RIDICARE');
 
             document.getElementById('v-render-area').innerHTML = `
                 <div class="flex-grow">
@@ -638,9 +638,9 @@
                                 <select id="sel-aloca" class="flex-grow p-2 border-2 border-slate-300 rounded-lg font-black text-[10px] bg-white text-slate-900">
     <option value="${f.alocat_catre}">${f.alocat_catre}</option>
                                     <option value="Propriu">1. Service Propriu</option>
-                                    <option value="Ridicare1">2. RIDICARE1</option>
-                                    <option value="Ridicare2">3. RIDICARE2</option>
-                                    <option value="Ridicare3">4. RIDICARE3</option>
+                                    <option value="SERVICE PROPRIU 1">2. SERVICE PROPRIU 1</option>
+                                    <option value="SERVICE PROPRIU 2">3. SERVICE PROPRIU 2</option>
+                                    <option value="RIDICARE">4. RIDICARE</option>
                                     <option value="BUXI PROFESIONAL">5. BUXI PROFESIONAL</option>
                                     <option value="MIXX MOTION">6. MIXX MOTION</option>
                                     <option value="PGC GRAND TOTAL">7. PGC GRAND TOTAL</option>
