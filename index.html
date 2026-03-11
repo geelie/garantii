@@ -294,6 +294,20 @@
             const minutes = String(now.getMinutes()).padStart(2, '0');
             return `${year}-${month}-${day}T${hours}:${minutes}`;
         }
+        function formatRelativ(dateStr) {
+    if (!dateStr) return "Recent";
+    const dataModificarii = new Date(dateStr);
+    const acum = new Date();
+    const difSecunde = Math.floor((acum - dataModificarii) / 1000);
+
+    if (difSecunde < 60) return "Chiar acum";
+    const minute = Math.floor(difSecunde / 60);
+    if (minute < 60) return `Acum ${minute}m`;
+    const ore = Math.floor(minute / 60);
+    if (ore < 24) return `Acum ${ore}h`;
+    
+    return dataModificarii.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit' });
+}
 
         window.onload = () => {
             const saved = localStorage.getItem('geeli_session');
@@ -330,13 +344,14 @@
                 document.getElementById('c-data-auto').value = getRoTime();
                 const hRow = document.getElementById('table-head-row');
                 
-hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4">#</th>' : '') + `
-    <th class="p-4">ID Fișă</th>
-    <th class="p-4">Client / Contact</th>
-    <th class="p-4">Produs / VIN</th>
-    <th class="p-4">Vechime</th>
-    <th class="p-4">Status</th>
-    <th class="p-4">Service</th>` + 
+hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-slate-200">#</th>' : '') + `
+    <th class="p-4 border-r border-slate-400">ID Fișă</th>
+    <th class="p-4 border-r border-slate-400">Client / Contact</th>
+    <th class="p-4 border-r border-slate-400">Produs / VIN</th>
+    <th class="p-4 border-r border-slate-400 text-slate-900">Actualizat</th>
+    <th class="p-4 border-r border-slate-400">Vechime</th>
+    <th class="p-4 border-r border-slate-400">Status</th>
+    <th class="p-4 border-r border-slate-400">Service</th>` + 
     ((activeUser.rol === 'admin' || activeUser.service === 'RIDICARE') ? '<th class="p-4">Transport</th>' : '');
                
     loadFise();
@@ -428,47 +443,59 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4">#</th>' : '') + 
 
       async function loadFise() {
     if(activeUser.rol === 'none') {
-        document.getElementById('fise-rows').innerHTML = '<tr><td colspan="7" class="p-10 text-center font-black text-red-600 uppercase">Cont neactivat.</td></tr>';
+        document.getElementById('fise-rows').innerHTML = '<tr><td colspan="8" class="p-10 text-center font-black text-red-600 uppercase">Cont neactivat.</td></tr>';
         return;
-    }
-    let q = _supa.from('fise').select('*').eq('is_deleted', false);
-
-    if(activeUser.rol !== 'admin') {
-        q = q.eq('alocat_catre', activeUser.service);
-    }
-
-    const { data, error } = await q.order('created_at', { ascending: true });
-
-    if(error) {
-        console.error("Eroare la încărcarea fișelor:", error.message);
-        return;
-    }
-
+    }    
+    let q = _supa.from('fise').select('*');
+    if(activeUser.rol !== 'admin') q = q.eq('alocat_catre', activeUser.service);
+    
+    const { data } = await q.order('updated_at', { ascending: false });
+    
     if(!data) return;
-
-    const displayData = [...data].reverse();
+    const displayData = data;
+    
     const body = document.getElementById('fise-rows');
     body.innerHTML = '';
 
-    displayData.forEach((f) => {
-        const nrCrt = data.findIndex(x => x.id === f.id) + 1;
-        const vch = calcVechime(f.data_preluare_fizica);
-        
-        const transportStyle = f.tip_transport === 'INTRARE' ? 'text-red-600' : (f.tip_transport === 'IESIRE' ? 'text-green-600' : '');
-        const transportHtml = (activeUser.rol === 'admin' || activeUser.service === 'RIDICARE') ? 
-            `<td class="p-4 font-black text-[10px] ${transportStyle}">${f.tip_transport || ''}</td>` : '';
+    displayData.forEach((f, index) => {
 
-        body.innerHTML += `<tr onclick='openFisa(${JSON.stringify(f)})' class="border-b border-slate-100">
-            ${activeUser.rol === 'admin' ? `<td class="p-4 font-black text-slate-400 text-xs">${nrCrt}</td>` : ''}
-            <td class="p-4 font-mono font-black text-blue-700 text-xs">${f.id}</td>
-            <td class="p-4 font-black text-slate-900">${f.nume_client}</td>
-            <td class="p-4 text-xs font-bold text-slate-800">${f.marca_model}<br><span class="text-blue-600 font-black uppercase text-[10px]">${f.vin_produs}</span></td>
-            <td class="p-4 text-[10px] font-black ${vch.color}">${vch.text}</td>
-            <td class="p-4"><span class="px-2 py-1 rounded-full text-[9px] font-black uppercase ${f.status==='Finalizat'?'bg-green-600 text-white':'bg-amber-500 text-white'}">${f.status}</span></td>
-            <td class="p-4 text-[9px] font-black text-slate-700 italic">${f.alocat_catre}</td>
-            ${transportHtml}
-        </tr>`;
-    });
+    const nrCrt = index + 1;
+    const vch = calcVechime(f.data_preluare_fizica);
+       
+    const transportStyle = f.tip_transport === 'INTRARE' ? 'text-red-600' : (f.tip_transport === 'IESIRE' ? 'text-green-600' : '');
+    const transportHtml = (activeUser.rol === 'admin' || activeUser.service === 'RIDICARE') ? 
+        `<td class="p-4 font-black text-[10px] ${transportStyle}">${f.tip_transport || ''}</td>` : '';
+
+   body.innerHTML += `<tr onclick='openFisa(${JSON.stringify(f)})' class="border-b border-slate-300 hover:bg-slate-50 cursor-pointer transition-colors">
+    ${activeUser.rol === 'admin' ? `<td class="p-4 border-r border-slate-300 font-black text-slate-400 text-xs">${nrCrt}</td>` : ''}
+    
+    <td class="p-4 border-r border-slate-300 font-mono font-black text-blue-700 text-xs">${f.id}</td>
+    
+    <td class="p-4 border-r border-slate-300 font-black text-slate-900">${f.nume_client}</td>
+    
+    <td class="p-4 border-r border-slate-300 text-xs font-bold text-slate-800">
+        ${f.marca_model}<br>
+        <span class="text-blue-600 font-black uppercase text-[10px]">${f.vin_produs}</span>
+    </td>
+    
+    <td class="p-4 border-r border-slate-300">
+    <span class="text-[9px] font-semibold text-blue-900 bg-slate-200 px-2 py-1 rounded-md border border-slate-300 uppercase">
+        ${formatRelativ(f.updated_at)}
+    </span>
+</td>
+
+    <td class="p-4 border-r border-slate-300 text-[10px] font-black ${vch.color}">${vch.text}</td>
+    
+    <td class="p-4 border-r border-slate-300">
+        <span class="px-2 py-1 rounded-full text-[9px] font-black uppercase ${f.status === 'Finalizat' ? 'bg-green-600 text-white' : 'bg-amber-500 text-white'}">
+            ${f.status}
+        </span>
+    </td>
+    
+    <td class="p-4 border-r border-slate-300 text-[9px] font-black text-slate-700 italic">${f.alocat_catre}</td>
+    
+    ${transportHtml} </tr>`;
+});
 }
 
         function calcVechime(dateStr) {
@@ -479,6 +506,7 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4">#</th>' : '') + 
                 color: diff <= 14 ? "text-green-700" : "text-red-700"
             };
         }
+    
 
         function toggleAltCategorie() {
             const sel = document.getElementById('p-cat').value;
@@ -758,17 +786,16 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4">#</th>' : '') + 
     const stat = document.getElementById('sel-status-admin').value;
     const trans = document.getElementById('sel-transport-admin').value;
 
-    const { error } = await _supa.from('fise').update({ 
+   const { error } = await _supa.from('fise').update({ 
         alocat_catre: dest, 
         status: stat,
-        tip_transport: trans 
+        tip_transport: trans,
+        updated_at: new Date().toISOString()
     }).eq('id', currentFisa.id);
-
-    if (error) {
-        alert("Eroare la actualizare: " + error.message);
-    } else {
+    
+    if (!error) {
         closeModal(); 
-        loadFise();
+        await loadFise();
     }
 }
 
