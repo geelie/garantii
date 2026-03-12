@@ -446,7 +446,8 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
         document.getElementById('fise-rows').innerHTML = '<tr><td colspan="8" class="p-10 text-center font-black text-red-600 uppercase">Cont neactivat.</td></tr>';
         return;
     }    
-    let q = _supa.from('fise').select('*');
+
+    let q = _supa.from('fise').select('*').eq('is_deleted', false);
     if(activeUser.rol !== 'admin') q = q.eq('alocat_catre', activeUser.service);
     
     const { data } = await q.order('updated_at', { ascending: false });
@@ -902,3 +903,4 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
     </script>
 </body>
 </html>
+
