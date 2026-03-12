@@ -481,19 +481,19 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
         <span class="text-blue-600 font-black uppercase text-[10px]">${f.vin_produs}</span>
     </td>
     
-    <td class="p-4 border-r border-slate-300">
-    <span class="text-[9px] font-semibold text-blue-900 bg-slate-200 px-2 py-1 rounded-md border border-slate-300 uppercase">
+    <td class="p-2 md:p-4 border-r border-slate-300 whitespace-nowrap">
+    <span class="text-[8px] md:text-[9px] font-bold text-blue-900 bg-slate-200 px-1 py-1 rounded-md border border-slate-300 uppercase">
         ${formatRelativ(f.updated_at)}
     </span>
 </td>
 
     <td class="p-4 border-r border-slate-300 text-[10px] font-black ${vch.color}">${vch.text}</td>
     
-    <td class="p-4 border-r border-slate-300">
-        <span class="px-2 py-1 rounded-full text-[9px] font-black uppercase ${f.status === 'Finalizat' ? 'bg-green-600 text-white' : (f.status === 'Respins' ? 'bg-red-600 text-white' : 'bg-amber-500 text-white')}">
-    ${f.status}
-</span>
-    </td>
+    <td class="p-2 md:p-4 border-r border-slate-300 whitespace-nowrap">
+    <span class="px-1.5 py-1 rounded-full text-[8px] md:text-[9px] font-black uppercase ${f.status === 'Finalizat' ? 'bg-green-600 text-white' : 'bg-amber-500 text-white'}">
+        ${f.status}
+    </span>
+</td>
     
     <td class="p-4 border-r border-slate-300 text-[9px] font-black text-slate-700 italic">${f.alocat_catre}</td>
     
@@ -898,3 +898,4 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
     </script>
 </body>
 </html>
+
