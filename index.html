@@ -129,9 +129,10 @@
                     <div class="flex items-center gap-2 w-full md:w-auto">
                         <span class="text-[10px] font-black uppercase text-blue-700">Export Excel:</span>
                         <select id="export-type" class="flex-grow md:flex-grow-0 p-2 border rounded font-bold text-xs bg-slate-50 outline-none" onchange="toggleExportDates()">
-                            <option value="all">Toate Fișele</option>
-                            <option value="period">Perioadă Specifică</option>
-                        </select>
+    <option value="all">Toate Fișele</option>
+    <option value="period">Perioadă Specifică</option>
+    <option value="current">Afisate acum (Filtrate)</option>
+</select>
                     </div>
                     <div id="export-dates" class="hidden flex items-center gap-2 w-full md:w-auto">
                         <input type="date" id="exp-start" class="flex-grow p-2 border rounded font-bold text-xs">
@@ -874,61 +875,71 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
             document.getElementById('export-dates').classList.toggle('hidden', type !== 'period');
         }
 
-        async function exportToExcel() {
-            const type = document.getElementById('export-type').value;
-            let query = _supa.from('fise').select('*').order('created_at', { ascending: true });
+       async function exportToExcel() {
+    const type = document.getElementById('export-type').value;
+    let dataToExport = [];
 
-            if (type === 'period') {
-                const start = document.getElementById('exp-start').value;
-                const end = document.getElementById('exp-end').value;
-                if (!start || !end) return alert("Selectați perioada!");
-                query = query.gte('created_at', start + "T00:00").lte('created_at', end + "T23:59");
-            }
+    if (type === 'current') {
+    
+        const visibleRows = Array.from(document.querySelectorAll('#fise-rows tr')).filter(tr => tr.style.display !== 'none');
+        
+        if (visibleRows.length === 0) return alert("Nu există date vizibile de exportat!");
 
-            const { data, error } = await query;
-            if (error || !data.length) return alert("Nu există date de exportat!");
+        const visibleIds = visibleRows.map(tr => tr.cells[activeUser.rol === 'admin' ? 1 : 0].innerText.trim());
+        
+        const { data, error } = await _supa.from('fise').select('*').in('id', visibleIds);
+        if (error) return alert("Eroare la preluarea datelor filtrate!");
+        dataToExport = data;
+    } else {
+        
+        let query = _supa.from('fise').select('*').eq('is_deleted', false).order('created_at', { ascending: true });
 
-            const rows = data.map((f, idx) => ({
-                "Nr. Crt": idx + 1,
-                "ID Fisa": f.id,
-                "Data Inregistrare": f.created_at ? (() => {
-    const parts = f.created_at.substring(0, 10).split('-');
-    const time = f.created_at.substring(11, 19);
-    return `${parts[2]}-${parts[1]}-${parts[0]} ${time}`;
-})() : '',
-                "Nume Client": f.nume_client,
-                "Telefon": f.tel_client,
-                "Email": f.email_client,
-                "Adresa": f.adresa_client,
-                "Categorie": f.categorie,
-                "Marca/Model": f.marca_model,
-                "VIN": f.vin_produs,
-                "Nr Factura": f.nr_factura,
-                "Data Factura": f.data_factura ? f.data_factura.split('-').reverse().join('-') : '',
-                "Tip Garantie": f.tip_garantie,
-                "Observatii Produs": f.obs_produs,
-                "Data Preluare Fizica": f.data_preluare_fizica ? f.data_preluare_fizica.split('-').reverse().join('-') : '',
-                "Reclamatie Client": f.reclamatie_client,
-                "Status": f.status,
-                "Alocat Catre": f.alocat_catre,
-                "Tehnician": f.tehnician,
-                "KM/Ore": f.km || '',
-                "Cost": f.cost || '',
-                "Raport Tehnic": f.raport_reparatie
-            }));
-
-            const worksheet = XLSX.utils.json_to_sheet(rows);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Fise Service");
-
-            // Auto-size coloane
-            const max_width = rows.reduce((w, r) => Math.max(w, r["Nume Client"].length), 10);
-            worksheet["!cols"] = [ { wch: 8 }, { wch: 12 }, { wch: 20 }, { wch: 25 } ];
-
-            XLSX.writeFile(workbook, `Export_Geeli_Service_${new Date().toISOString().slice(0,10)}.xlsx`);
+        if (type === 'period') {
+            const start = document.getElementById('exp-start').value;
+            const end = document.getElementById('exp-end').value;
+            if (!start || !end) return alert("Selectați perioada!");
+            query = query.gte('created_at', start + "T00:00").lte('created_at', end + "T23:59");
         }
 
-        // Funcția pentru deschiderea ferestrei și încărcarea datelor
+        const { data, error } = await query;
+        if (error || !data.length) return alert("Nu există date de exportat!");
+        dataToExport = data;
+    }
+
+    const rows = dataToExport.map((f, idx) => ({
+        "Nr. Crt": idx + 1,
+        "ID Fisa": f.id,
+        "Data Inregistrare": f.created_at ? (() => {
+            const parts = f.created_at.substring(0, 10).split('-');
+            const time = f.created_at.substring(11, 19);
+            return `${parts[2]}-${parts[1]}-${parts[0]} ${time}`;
+        })() : '',
+        "Nume Client": f.nume_client,
+        "Telefon": f.tel_client,
+        "Email": f.email_client,
+        "Adresa": f.adresa_client,
+        "Categorie": f.categorie,
+        "Marca/Model": f.marca_model,
+        "VIN": f.vin_produs,
+        "Nr Factura": f.nr_factura,
+        "Data Factura": f.data_factura ? f.data_factura.split('-').reverse().join('-') : '',
+        "Tip Garantie": f.tip_garantie,
+        "Observatii Produs": f.obs_produs,
+        "Data Preluare Fizica": f.data_preluare_fizica ? f.data_preluare_fizica.split('-').reverse().join('-') : '',
+        "Reclamatie Client": f.reclamatie_client,
+        "Status": f.status,
+        "Alocat Catre": f.alocat_catre,
+        "Tehnician": f.tehnician,
+        "KM/Ore": f.km || '',
+        "Cost": f.cost || '',
+        "Raport Tehnic": f.raport_reparatie
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Fise Service");
+    XLSX.writeFile(workbook, `Export_Geeli_Service_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
 async function openArchiveModal() {
     if (activeUser.rol !== 'admin') return;
     
