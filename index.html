@@ -142,6 +142,13 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         Export Excel
                     </button>
+                    <div id="archive-counter-container" class="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-lg border border-slate-200 ml-auto">
+    <div class="flex flex-col items-center">
+        <span class="text-[9px] font-black uppercase text-slate-500">Fișe arhivate</span>
+        <span id="archive-count" class="text-sm font-black text-green-600 leading-none">0</span>
+    </div>
+    <button onclick="openArchiveModal()" class="bg-slate-800 text-white px-2 py-1 rounded text-[9px] font-black hover:bg-slate-700 transition uppercase">Info</button>
+</div>
                 </div>
 
                 <input type="text" id="search-box" onkeyup="filterTable()" placeholder="Caută după nume, VIN, telefon..." class="w-full p-4 mb-6 border-2 border-slate-300 rounded-xl shadow-sm outline-none font-semibold focus:border-blue-500 transition text-sm md:text-base">
@@ -360,6 +367,26 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
                 else localStorage.removeItem('geeli_session');
             }
         }
+        async function updateArchiveCounter() {
+    if (activeUser.rol !== 'admin') return;
+    
+    const { count, error } = await _supa
+        .from('fise')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_deleted', true);
+
+    if (!error) {
+        const display = document.getElementById('archive-count');
+        display.innerText = count;
+        if (count > 0) {
+            display.classList.remove('text-green-600');
+            display.classList.add('text-red-600');
+        } else {
+            display.classList.remove('text-red-600');
+            display.classList.add('text-green-600');
+        }
+    }
+}
 
         async function handleResetPassword() {
             const u = document.getElementById('reset-user').value.trim();
@@ -446,7 +473,7 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
         document.getElementById('fise-rows').innerHTML = '<tr><td colspan="8" class="p-10 text-center font-black text-red-600 uppercase">Cont neactivat.</td></tr>';
         return;
     }    
-
+    updateArchiveCounter();
     let q = _supa.from('fise').select('*').eq('is_deleted', false);
     if(activeUser.rol !== 'admin') q = q.eq('alocat_catre', activeUser.service);
     
@@ -900,7 +927,122 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
 
             XLSX.writeFile(workbook, `Export_Geeli_Service_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
+
+        // Funcția pentru deschiderea ferestrei și încărcarea datelor
+async function openArchiveModal() {
+    if (activeUser.rol !== 'admin') return;
+    
+    const { data, error } = await _supa
+        .from('fise')
+        .select('id, deleted_at, deleted_by_name, deleted_by_username')
+        .eq('is_deleted', true)
+        .order('deleted_at', { ascending: false });
+
+    if (error) {
+        alert("Eroare la încărcarea arhivei: " + error.message);
+        return;
+    }
+
+    const body = document.getElementById('archive-rows');
+    body.innerHTML = '';
+
+    if (data.length === 0) {
+        body.innerHTML = '<tr><td colspan="4" class="p-10 text-center text-slate-400 italic">Nu există fișe în arhivă.</td></tr>';
+    } else {
+        data.forEach(f => {
+    const dataSters = f.deleted_at ? new Date(f.deleted_at).toLocaleString('ro-RO') : '-';
+    body.innerHTML += `
+        <tr class="hover:bg-red-50 transition-colors border-b border-slate-100">
+            <td class="p-3 font-mono text-blue-700">${f.id}</td>
+            <td class="p-3">${dataSters}</td>
+            <td class="p-3">${f.deleted_by_name || '-'}</td>
+            <td class="p-3 text-slate-500 uppercase">${f.deleted_by_username || '-'}</td>
+            <td class="p-3 text-right">
+                <button onclick="restoreFisa(${f.id})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition shadow-sm">
+                    Restabilire
+                </button>
+            </td>
+        </tr>`;
+});
+    }
+
+    document.getElementById('modal-archive').classList.remove('hidden');
+}
+
+function closeArchiveModal() {
+    document.getElementById('modal-archive').classList.add('hidden');
+}
+
+// Actualizarea funcției existente updateArchiveCounter pentru a asigura precizia
+async function updateArchiveCounter() {
+    if (activeUser.rol !== 'admin') return;
+    
+    const { count, error } = await _supa
+        .from('fise')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_deleted', true);
+
+    if (!error) {
+        const display = document.getElementById('archive-count');
+        display.innerText = count;
+        if (count > 0) {
+            display.className = "text-sm font-black text-red-600 leading-none";
+        } else {
+            display.className = "text-sm font-black text-green-600 leading-none";
+        }
+    }
+}
+
+async function restoreFisa(id) {
+    if (!confirm(`Sigur doriți să restabiliți fișa cu ID-ul ${id}?`)) return;
+
+    try {
+        const { error } = await _supa
+            .from('fise')
+            .update({ 
+                is_deleted: false,
+                deleted_at: null,
+                deleted_by_name: null,
+                deleted_by_username: null 
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        alert("Fișa a fost restabilită cu succes!");
+        
+        // Actualizăm totul automat
+        await updateArchiveCounter(); // Scade numărul de la "Fișe arhivate"
+        await openArchiveModal();     // Reîmprospătează lista din fereastra deschisă
+        if (typeof loadFise === "function") await loadFise(); // Reîncarcă tabelul principal din spate
+        
+    } catch (err) {
+        alert("Eroare la restabilire: " + err.message);
+    }
+}
     </script>
+    <div id="modal-archive" class="fixed inset-0 bg-black/80 hidden z-[60] overflow-y-auto p-4 flex items-center justify-center no-print">
+    <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden">
+        <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+            <h3 class="font-black uppercase italic tracking-tighter">Arhivă Fișe Șterse</h3>
+            <button onclick="closeArchiveModal()" class="text-white font-black text-xl">&times;</button>
+        </div>
+        <div class="p-4 overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 uppercase font-black">
+    <tr>
+        <th class="p-3">ID Fișă</th>
+        <th class="p-3">Data/Ora Ștergerii</th>
+        <th class="p-3">Nume Administrator</th>
+        <th class="p-3">Username</th>
+        <th class="p-3 text-right">Acțiuni</th>
+    </tr>
+</thead>
+                <tbody id="archive-rows" class="divide-y divide-slate-100 text-slate-900 font-bold">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 </body>
 </html>
-
