@@ -539,7 +539,7 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
     displayData.forEach((f, index) => {
 
     const nrCrt = displayData.length - index;
-    const vch = calcVechime(f.data_preluare_fizica);
+    const vch = calcVechime(f);
        
     const transportStyle = f.tip_transport === 'INTRARE' ? 'text-red-600' : (f.tip_transport === 'IESIRE' ? 'text-green-600' : '');
     const transportHtml = (activeUser.rol === 'admin' || activeUser.service === 'RIDICARE') ? 
@@ -580,14 +580,38 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
 });
 }
 
-        function calcVechime(dateStr) {
-            if(!dateStr) return { text: "-", color: "text-slate-400" };
-            const diff = Math.floor((new Date() - new Date(dateStr)) / 86400000);
-            return {
-                text: diff <= 14 ? `${diff} ZILE (OK)` : `${diff} ZILE (DEPĂȘIT)`,
-                color: diff <= 14 ? "text-green-700" : "text-red-700"
-            };
-        }
+        function calcVechime(fisa) {
+    // Verificăm dacă există data de preluare fizică (punctul de pornire)
+    if (!fisa || !fisa.data_preluare_fizica) {
+        return { text: "-", color: "text-slate-400" };
+    }
+
+    const dataStart = new Date(fisa.data_preluare_fizica);
+    let dataReferinta;
+
+    // LOGICA DE ÎNGHEȚARE:
+    // Dacă fisa are data_finalizare (status Finalizat/Refuzat), calculăm până la acel moment.
+    // Altfel (este "În lucru"), calculăm până în momentul prezent (new Date()).
+    if (fisa.data_finalizare) {
+        dataReferinta = new Date(fisa.data_finalizare);
+    } else {
+        dataReferinta = new Date();
+    }
+
+    // Calculăm diferența în zile
+    const diffTime = dataReferinta - dataStart;
+    let diffZile = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    // Ne asigurăm că nu afișăm zile negative în cazul unor erori de input
+    if (diffZile < 0) diffZile = 0;
+
+    const esteDepasit = diffZile > 14;
+
+    return {
+        text: esteDepasit ? `${diffZile} ZILE (DEPĂȘIT)` : `${diffZile} ZILE (OK)`,
+        color: esteDepasit ? "text-red-700" : "text-green-700"
+    };
+}
     
 
         function toggleAltCategorie() {
@@ -700,7 +724,7 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
             document.getElementById('modal-view').classList.remove('hidden');
             document.getElementById('admin-edit-btn').classList.toggle('hidden', activeUser.rol !== 'admin');
             document.getElementById('admin-delete-btn').classList.toggle('hidden', activeUser.rol !== 'admin');
-            const vch = calcVechime(f.data_preluare_fizica);
+            const vch = calcVechime(f);
             const canEditReport = (activeUser.rol === 'admin' || (activeUser.service === f.alocat_catre && f.status === 'În lucru'));
             const isPropriuType = (f.alocat_catre === 'Propriu' || f.alocat_catre === 'SERVICE PROPRIU 1' || f.alocat_catre === 'SERVICE PROPRIU 2' || f.alocat_catre === 'RIDICARE');
 
@@ -878,35 +902,67 @@ hRow.innerHTML = (activeUser.rol === 'admin' ? '<th class="p-4 border-r border-s
     const stat = document.getElementById('sel-status-admin').value;
     const trans = document.getElementById('sel-transport-admin').value;
 
-   const { error } = await _supa.from('fise').update({ 
+    // LOGICA NOUĂ: Verificăm dacă noul status selectat este unul care "îngheață" timpul.
+    // Dacă statusul este "Finalizat" sau "Refuzat", oprim cronometrul.
+    const esteStatusFinal = (stat === 'Finalizat' || stat === 'Refuzat');
+
+    const updateData = { 
         alocat_catre: dest, 
         status: stat,
         tip_transport: trans,
-        updated_at: new Date().toISOString()
-    }).eq('id', currentFisa.id);
+        updated_at: new Date().toISOString(),
+        // Dacă este status final, salvăm data curentă. 
+        // Dacă este "În lucru", setăm null pentru a relua numărătoarea.
+        data_finalizare: esteStatusFinal ? new Date().toISOString() : null
+    };
+
+    const { error } = await _supa.from('fise').update(updateData).eq('id', currentFisa.id);
     
     if (!error) {
         closeModal(); 
         await loadFise();
+    } else {
+        console.error("Eroare la actualizarea alocării:", error);
+        alert("A apărut o eroare la salvarea modificărilor.");
     }
 }
 
-        async function saveRaport(isFinal) {
-            const upd = {
-                tehnician: document.getElementById('s-teh').value,
-                raport_reparatie: document.getElementById('s-rap').value,
-                status: isFinal ? 'Finalizat' : 'În lucru'
-            };
-            if(document.getElementById('s-transport')) {
+       async function saveRaport(isFinal) {
+    // Determinăm noul status în funcție de butonul apăsat
+    const noulStatus = isFinal ? 'Finalizat' : 'În lucru';
+
+    // Construim obiectul de actualizare
+    const upd = {
+        tehnician: document.getElementById('s-teh').value,
+        raport_reparatie: document.getElementById('s-rap').value,
+        status: noulStatus,
+        // LOGICA NOUĂ: 
+        // Dacă isFinal este true, salvăm data curentă în data_finalizare.
+        // Dacă isFinal este false (repunere în lucru), ștergem data_finalizare (null).
+        data_finalizare: isFinal ? new Date().toISOString() : null
+    };
+
+    // Păstrăm toate funcționalitățile existente de verificare a elementelor din DOM
+    if(document.getElementById('s-transport')) {
         upd.tip_transport = document.getElementById('s-transport').value;
     }
-            if(document.getElementById('s-km')) upd.km = document.getElementById('s-km').value;
-            if(document.getElementById('s-ore')) upd.ore = document.getElementById('s-ore').value;
-            if(document.getElementById('s-cost')) upd.cost = document.getElementById('s-cost').value;
-            if(document.getElementById('s-emi')) upd.emitent_factura_service = document.getElementById('s-emi').value;
-            await _supa.from('fise').update(upd).eq('id', currentFisa.id);
-            closeModal(); loadFise();
-        }
+    
+    if(document.getElementById('s-km')) upd.km = document.getElementById('s-km').value;
+    if(document.getElementById('s-ore')) upd.ore = document.getElementById('s-ore').value;
+    if(document.getElementById('s-cost')) upd.cost = document.getElementById('s-cost').value;
+    if(document.getElementById('s-emi')) upd.emitent_factura_service = document.getElementById('s-emi').value;
+
+    // Executăm actualizarea în baza de date
+    const { error } = await _supa.from('fise').update(upd).eq('id', currentFisa.id);
+
+    if (error) {
+        console.error("Eroare la salvarea raportului:", error);
+        alert("Eroare la salvare!");
+    } else {
+        closeModal(); 
+        loadFise();
+    }
+}
 
         function switchTab(id) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
