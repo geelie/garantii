@@ -753,6 +753,7 @@
             const editId = document.getElementById('edit-fisa-id').value;
             let finalCategorie = document.getElementById('p-cat').value;
             if (finalCategorie === 'Alta') finalCategorie = document.getElementById('p-cat-alt').value;
+
             const fisa = {
                 nume_client: document.getElementById('c-nume').value,
                 tel_client: document.getElementById('c-tel').value || "",
@@ -770,15 +771,33 @@
                 data_preluare_fizica: document.getElementById('p-dprel').value || null,
                 reclamatie_client: document.getElementById('p-rec').value || ""
             };
-            if (editId) await _supa.from('fise').update(fisa).eq('id', editId);
-            else {
+
+            let result;
+
+            if (editId) {
+
+                result = await _supa.from('fise').update(fisa).eq('id', editId);
+            } else {
+
                 const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
                 fisa.id = dateStr + Math.floor(Math.random() * 100).toString().padStart(3, '0');
                 fisa.status = 'În lucru';
                 fisa.alocat_catre = 'Nealocat';
-                await _supa.from('fise').insert([fisa]);
+                result = await _supa.from('fise').insert([fisa]);
             }
-            cancelEdit(); loadFise(); switchTab('tab-list');
+
+            if (result.error) {
+
+                alert("Eroare la salvare: " + result.error.message);
+            } else {
+
+                alert("Fișa a fost salvată cu succes!");
+
+                cancelEdit();
+                loadFise();
+                switchTab('tab-list');
+                document.getElementById('form-fisa-noua').reset();
+            }
         };
 
         function startEdit() {
@@ -1029,8 +1048,6 @@
             const stat = document.getElementById('sel-status-admin').value;
             const trans = document.getElementById('sel-transport-admin').value;
 
-            // LOGICA NOUĂ: Verificăm dacă noul status selectat este unul care "îngheață" timpul.
-            // Dacă statusul este "Finalizat" sau "Refuzat", oprim cronometrul.
             const esteStatusFinal = (stat === 'Finalizat' || stat === 'Refuzat');
 
             const updateData = {
@@ -1038,8 +1055,7 @@
                 status: stat,
                 tip_transport: trans,
                 updated_at: new Date().toISOString(),
-                // Dacă este status final, salvăm data curentă. 
-                // Dacă este "În lucru", setăm null pentru a relua numărătoarea.
+
                 data_finalizare: esteStatusFinal ? new Date().toISOString() : null
             };
 
@@ -1055,21 +1071,17 @@
         }
 
         async function saveRaport(isFinal) {
-            // Determinăm noul status în funcție de butonul apăsat
+
             const noulStatus = isFinal ? 'Finalizat' : 'În lucru';
 
-            // Construim obiectul de actualizare
             const upd = {
                 tehnician: document.getElementById('s-teh').value,
                 raport_reparatie: document.getElementById('s-rap').value,
                 status: noulStatus,
-                // LOGICA NOUĂ: 
-                // Dacă isFinal este true, salvăm data curentă în data_finalizare.
-                // Dacă isFinal este false (repunere în lucru), ștergem data_finalizare (null).
+
                 data_finalizare: isFinal ? new Date().toISOString() : null
             };
 
-            // Păstrăm toate funcționalitățile existente de verificare a elementelor din DOM
             if (document.getElementById('s-transport')) {
                 upd.tip_transport = document.getElementById('s-transport').value;
             }
@@ -1079,7 +1091,6 @@
             if (document.getElementById('s-cost')) upd.cost = document.getElementById('s-cost').value;
             if (document.getElementById('s-emi')) upd.emitent_factura_service = document.getElementById('s-emi').value;
 
-            // Executăm actualizarea în baza de date
             const { error } = await _supa.from('fise').update(upd).eq('id', currentFisa.id);
 
             if (error) {
