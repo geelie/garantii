@@ -768,18 +768,19 @@
                 </div>`;
         }
 
-        // Construiește query-ul de bază cu toate filtrele active (pentru refolosire)
         function buildBaseQuery(forCount = false) {
             const q = currentSearchQuery.trim().toLowerCase();
-            let query = _supa.from('fise')
+
+            // ATENȚIE: Modificăm de la 'fise' la 'fise_cu_vechime'
+            let query = _supa.from('fise_cu_vechime')
                 .select(forCount ? '*' : '*', { count: 'exact', head: forCount })
                 .eq('is_deleted', false);
 
-            if (activeUser.rol !== 'admin') query = query.eq('alocat_catre', activeUser.service);
+            if (activeUser.rol !== 'admin') {
+                query = query.eq('alocat_catre', activeUser.service);
+            }
 
             if (q) {
-                // Filtrare server-side pe toate criteriile din filterTable original
-                // Supabase acceptă ilike și or pentru text search
                 query = query.or([
                     `nume_client.ilike.%${q}%`,
                     `vin_produs.ilike.%${q}%`,
@@ -790,9 +791,11 @@
                     `email_client.ilike.%${q}%`,
                     `status.ilike.%${q}%`,
                     `alocat_catre.ilike.%${q}%`,
-                    `tip_transport.ilike.%${q}%`
+                    `tip_transport.ilike.%${q}%`,
+                    `vechime_status.ilike.%${q}%`
                 ].join(','));
             }
+
 
             return query;
         }
