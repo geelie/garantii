@@ -244,6 +244,15 @@
                     <input type="text" id="search-box" onkeyup="filterTable()"
                         placeholder="Caută după nume, VIN, telefon..."
                         class="flex-grow min-w-0 p-3 md:p-4 border-2 border-slate-300 rounded-xl shadow-sm outline-none font-semibold focus:border-blue-500 transition text-sm md:text-base">
+
+                    <select id="status-filter" onchange="handleStatusChange()"
+                        class="p-2 md:p-3 border-2 border-slate-200 rounded-lg font-bold text-xs md:text-sm bg-white text-slate-700 outline-none focus:border-blue-500 transition-all">
+                        <option value="Toate">Toate Statusurile</option>
+                        <option value="În lucru">În lucru</option>
+                        <option value="Finalizat">Finalizat</option>
+                        <option value="Revenire">Revenire</option>
+                    </select>
+
                     <select onchange="changePageSize(this.value)"
                         class="flex-shrink-0 w-20 md:w-auto p-2 md:p-4 border-2 border-slate-300 rounded-xl font-black text-xs md:text-sm bg-white outline-none focus:border-blue-500 transition no-print">
                         <option value="25">25 fișe/pag.</option>
@@ -655,14 +664,13 @@
             }
         }
 
-        // --- PAGINARE SERVER-SIDE ---
         let ITEMS_PER_PAGE = 50;
         let currentPage = 1;
-        let totalFiseCount = 0;     // total fișe din baza de date (pentru coloana #)
-        let totalFilteredCount = 0; // total fișe după filtrare (pentru paginare)
+        let totalFiseCount = 0;
+        let totalFilteredCount = 0;
         let currentSearchQuery = '';
+        let currentStatusFilter = 'Toate';
         let _searchDebounceTimer = null;
-
         function changePageSize(val) {
             ITEMS_PER_PAGE = parseInt(val);
             loadFise(1);
@@ -768,16 +776,26 @@
                 </div>`;
         }
 
+        function handleStatusChange() {
+            const statusValue = document.getElementById('status-filter').value;
+            currentStatusFilter = statusValue; // Actualizăm variabila globală de filtrare
+            currentPage = 1; // Resetăm la prima pagină pentru noile rezultate
+            loadFise(1); // Reîncărcăm datele cu noul filtru aplicat
+        }
+
         function buildBaseQuery(forCount = false) {
             const q = currentSearchQuery.trim().toLowerCase();
 
-            // ATENȚIE: Modificăm de la 'fise' la 'fise_cu_vechime'
             let query = _supa.from('fise_cu_vechime')
                 .select(forCount ? '*' : '*', { count: 'exact', head: forCount })
                 .eq('is_deleted', false);
 
             if (activeUser.rol !== 'admin') {
                 query = query.eq('alocat_catre', activeUser.service);
+            }
+
+            if (currentStatusFilter !== 'Toate') {
+                query = query.eq('status', currentStatusFilter);
             }
 
             if (q) {
