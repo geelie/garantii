@@ -1055,9 +1055,31 @@
           activeUser.rol === "admin" || activeUser.service === "RIDICARE"
             ? `<td class="p-4 font-black text-[10px] ${transportStyle}">${f.tip_transport || ""}</td>`
             : "";
-        return `<tr onclick='openFisa(${JSON.stringify(f)})' class="border-b border-slate-300 hover:bg-slate-50 cursor-pointer transition-colors">
+        return `<tr onclick='if(!event.target.closest(".drive-btn")) openFisa(${JSON.stringify(f)})' class="border-b border-slate-300 hover:bg-slate-50 cursor-pointer transition-colors">
     ${activeUser.rol === "admin" ? `<td class="p-4 border-r border-slate-300 font-black text-slate-400 text-xs">${globalNrCrt}</td>` : ""}
-    <td class="p-4 border-r border-slate-300 font-mono font-black text-blue-700 text-xs">${f.id}</td>
+
+    <td class="p-4 border-r border-slate-300 font-mono font-black text-blue-700 text-xs">
+        ${f.id}
+        ${
+          activeUser.rol === "admin"
+            ? `<button
+            data-fisa-id="${f.id}"
+            data-drive-link="${f.drive_link || ""}"
+            class="drive-btn inline-block ml-1 align-middle transform hover:scale-110 transition-transform"
+            title="${f.drive_link ? "Folder Drive atașat" : "Adaugă / Vezi Drive"}"
+            onclick="openDriveModal(this.dataset.fisaId, this.dataset.driveLink)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 87.3 78" fill="none">
+                <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="${f.drive_link ? "#0F9D58" : "#9AA0A6"}"/>
+                <path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 49c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="${f.drive_link ? "#00AC47" : "#BDC1C6"}"/>
+                <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.8l5.85 11.5z" fill="${f.drive_link ? "#EA4335" : "#9AA0A6"}"/>
+                <path d="M43.65 25L57.4 1.2C56.05.43 54.5 0 52.9 0H34.4c-1.6 0-3.15.43-4.5 1.2z" fill="${f.drive_link ? "#00832D" : "#BDC1C6"}"/>
+                <path d="M59.8 53.5H27.5L13.75 77.3c1.35.78 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.42 4.5-1.2z" fill="${f.drive_link ? "#2684FC" : "#BDC1C6"}"/>
+                <path d="M73.4 26.5l-12.65-21.9c-1.35-.8-2.9-1.2-4.5-1.2h0L43.65 25l16.15 28.5H87.1c0-1.55-.4-3.1-1.2-4.5z" fill="${f.drive_link ? "#FFBA00" : "#9AA0A6"}"/>
+            </svg>
+        </button>`
+            : ""
+        }
+    </td>
 <td class="p-4 border-r border-slate-300 font-black text-slate-900">
     ${f.nume_client}<br>
     <span class="text-blue-600 font-black uppercase text-[10px] inline-flex items-center gap-1">
@@ -2064,6 +2086,98 @@
         const modWrapper = document.getElementById("p-mod-wrapper");
         modWrapper.innerHTML = `<input type="text" id="p-mod" placeholder="Introduceți Marcă / Model" class="w-full p-3 border-2 border-slate-200 rounded-lg font-semibold text-sm">`;
       }
+
+      // ============================================================
+      // DRIVE MODAL — funcții independente, nu modifică nimic existent
+      // ============================================================
+
+      async function openDriveModal(fisaId) {
+        document.getElementById("drive-modal-fisa-id").value = fisaId;
+        document.getElementById("drive-link-input").value = "";
+        document.getElementById("drive-link-input-area").style.display = "none";
+        document.getElementById("drive-save-btn").style.display = "none";
+        document.getElementById("drive-view-btn").style.display = "none";
+        document.getElementById("drive-delete-btn").style.display = "none";
+        document.getElementById("modal-drive").classList.remove("hidden");
+
+        const { data, error } = await _supa
+          .from("fise")
+          .select("drive_link")
+          .eq("id", fisaId)
+          .maybeSingle();
+
+        if (
+          !error &&
+          data &&
+          data.drive_link &&
+          data.drive_link.trim() !== ""
+        ) {
+          const viewBtn = document.getElementById("drive-view-btn");
+          viewBtn.style.display = "flex";
+          viewBtn.onclick = () => window.open(data.drive_link.trim(), "_blank");
+
+          const deleteBtn = document.getElementById("drive-delete-btn");
+          deleteBtn.style.display = "flex";
+          deleteBtn.onclick = () => deleteDriveLink(fisaId);
+        }
+      }
+
+      function closeDriveModal() {
+        document.getElementById("modal-drive").classList.add("hidden");
+      }
+
+      function showDriveLinkInput() {
+        document.getElementById("drive-link-input-area").style.display = "flex";
+        document.getElementById("drive-save-btn").style.display = "block";
+        document.getElementById("drive-link-input").focus();
+      }
+
+      async function saveDriveLink() {
+        const fisaId = document.getElementById("drive-modal-fisa-id").value;
+        const link = document.getElementById("drive-link-input").value.trim();
+
+        if (!link) {
+          alert("Introduceți un link valid!");
+          return;
+        }
+
+        const { error } = await _supa
+          .from("fise")
+          .update({ drive_link: link })
+          .eq("id", fisaId);
+
+        if (error) {
+          alert("Eroare la salvare: " + error.message);
+          return;
+        }
+
+        alert("Link Drive salvat cu succes!");
+        closeDriveModal();
+        loadFise(currentPage);
+      }
+
+      async function deleteDriveLink(fisaId) {
+        if (
+          !confirm(
+            "Sigur doriți să ștergeți linkul Drive asociat acestei fișe?",
+          )
+        )
+          return;
+
+        const { error } = await _supa
+          .from("fise")
+          .update({ drive_link: null })
+          .eq("id", fisaId);
+
+        if (error) {
+          alert("Eroare la ștergere: " + error.message);
+          return;
+        }
+
+        alert("Link Drive șters cu succes!");
+        closeDriveModal();
+        loadFise(currentPage);
+      }
     </script>
     <div
       id="modal-archive"
@@ -2101,6 +2215,140 @@
               class="divide-y divide-slate-100 text-slate-900 font-bold"
             ></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DRIVE LINK — independent, nu afectează nimic existent -->
+    <div
+      id="modal-drive"
+      class="fixed inset-0 bg-black/70 hidden z-[70] flex items-center justify-center p-4 no-print"
+      onclick="if (event.target === this) closeDriveModal();"
+    >
+      <div
+        class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden"
+      >
+        <input type="hidden" id="drive-modal-fisa-id" />
+
+        <!-- Header -->
+        <div
+          class="p-4 bg-slate-900 text-white flex justify-between items-center"
+        >
+          <div class="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 87.3 78"
+              fill="none"
+            >
+              <path
+                d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z"
+                fill="#0F9D58"
+              />
+              <path
+                d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 49c-.8 1.4-1.2 2.95-1.2 4.5h27.5z"
+                fill="#00AC47"
+              />
+              <path
+                d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.8l5.85 11.5z"
+                fill="#EA4335"
+              />
+              <path
+                d="M43.65 25L57.4 1.2C56.05.43 54.5 0 52.9 0H34.4c-1.6 0-3.15.43-4.5 1.2z"
+                fill="#00832D"
+              />
+              <path
+                d="M59.8 53.5H27.5L13.75 77.3c1.35.78 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.42 4.5-1.2z"
+                fill="#2684FC"
+              />
+              <path
+                d="M73.4 26.5l-12.65-21.9c-1.35-.8-2.9-1.2-4.5-1.2h0L43.65 25l16.15 28.5H87.1c0-1.55-.4-3.1-1.2-4.5z"
+                fill="#FFBA00"
+              />
+            </svg>
+            <h3 class="font-black uppercase italic tracking-tighter text-sm">
+              Google Drive
+            </h3>
+          </div>
+          <button
+            onclick="closeDriveModal()"
+            class="text-white font-black text-xl leading-none"
+          >
+            &times;
+          </button>
+        </div>
+
+        <!-- Butoane principale -->
+        <div class="p-5 flex flex-col gap-3">
+          <!-- Buton Adaugă calea -->
+          <button
+            onclick="showDriveLinkInput()"
+            class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-black text-sm uppercase transition active:scale-95"
+          >
+            <span class="text-lg leading-none">+</span>
+            Adaugă calea
+          </button>
+
+          <!-- Câmp input link (ascuns inițial) -->
+          <div
+            id="drive-link-input-area"
+            class="flex flex-col gap-2"
+            style="display: none"
+          >
+            <input
+              type="url"
+              id="drive-link-input"
+              placeholder="https://drive.google.com/drive/folders/..."
+              class="w-full p-3 border-2 border-slate-300 rounded-lg font-semibold text-sm outline-none focus:border-blue-500 transition text-slate-900"
+            />
+            <button
+              id="drive-save-btn"
+              onclick="saveDriveLink()"
+              class="hidden w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-black text-sm uppercase transition active:scale-95"
+            >
+              Salvează
+            </button>
+          </div>
+
+          <!-- Buton Vezi imagini (vizibil doar dacă există link) -->
+          <button
+            id="drive-view-btn"
+            class="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-900 text-white px-4 py-3 rounded-xl font-black text-sm uppercase transition active:scale-95"
+            style="display: none"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="white"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+              />
+            </svg>
+            Vezi imagini
+          </button>
+
+          <button
+            id="drive-delete-btn"
+            class="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-xl font-black text-sm uppercase transition active:scale-95"
+            style="display: none"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="white"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+              />
+            </svg>
+            Șterge link
+          </button>
         </div>
       </div>
     </div>
