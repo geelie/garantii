@@ -674,16 +674,50 @@
                     />
                   </div>
                 </div>
+                <div>
+                  <label
+                    class="text-[9px] font-black text-slate-800 uppercase ml-1"
+                    >Emitent Factură</label
+                  >
+                  <select
+                    id="p-emitent"
+                    onchange="toggleEmitentAlt()"
+                    class="w-full p-3 border-2 border-slate-200 rounded-lg text-xs font-bold bg-white"
+                  >
+                    <option value="" disabled selected>Selectați emitentul...</option>
+                    <option value="ANY-STEF IMPEX S.R.L.">1. ANY-STEF IMPEX S.R.L.</option>
+                    <option value="ARTEMIS S.R.L.">2. ARTEMIS S.R.L.</option>
+                    <option value="AUTO NICO-SIMO S.R.L.">3. AUTO NICO-SIMO S.R.L.</option>
+                    <option value="AUTO TUNNING S.R.L.">4. AUTO TUNNING S.R.L.</option>
+                    <option value="BIO-NIRA S.R.L.">5. BIO-NIRA S.R.L.</option>
+                    <option value="BUXI PROFESIONAL S.R.L.">6. BUXI PROFESIONAL S.R.L.</option>
+                    <option value="ECOTWIN BUSINESS S.R.L.">7. ECOTWIN BUSINESS S.R.L.</option>
+                    <option value="ESPERANZA RECYCLING S.R.L.">8. ESPERANZA RECYCLING S.R.L.</option>
+                    <option value="EURODINAMIC S.R.L.">9. EURODINAMIC S.R.L.</option>
+                    <option value="GIRFLEX S.R.L.">10. GIRFLEX S.R.L.</option>
+                    <option value="GREEN ELECTRIC CENTER S.R.L.">11. GREEN ELECTRIC CENTER S.R.L.</option>
+                    <option value="MARELVI IMPEX S.R.L.">12. MARELVI IMPEX S.R.L.</option>
+                    <option value="MIXX MOTION S.R.L.">13. MIXX MOTION S.R.L.</option>
+                    <option value="TOMAS BICICLETE SHOP S.R.L.">14. TOMAS BICICLETE SHOP S.R.L.</option>
+                    <option value="Alta">Alta</option>
+                  </select>
+                  <input
+                    type="text"
+                    id="p-emitent-alt"
+                    placeholder="Introduceți emitentul..."
+                    class="hidden mt-2 w-full p-3 border-2 border-blue-400 rounded-lg font-bold bg-blue-50 text-blue-900 text-xs"
+                  />
+                </div>
                 <div class="flex flex-col sm:flex-row gap-2">
                   <div>
                     <label
                       class="text-[9px] font-black text-slate-800 uppercase ml-1"
-                      >Emitent / Nr. Factură / Data Fact.</label
+                      >Nr. Factură / Data Fact.</label
                     >
                     <input
                       type="text"
                       id="p-fact"
-                      placeholder="Emitent/Factură"
+                      placeholder="Nr. Factură"
                       class="w-full sm:w-[99%] p-3 border-2 border-slate-200 rounded-lg text-xs font-bold"
                     />
                   </div>
@@ -1346,12 +1380,29 @@
         }
       }
 
+      function toggleEmitentAlt() {
+        const sel = document.getElementById("p-emitent").value;
+        const inputAlt = document.getElementById("p-emitent-alt");
+        if (sel === "Alta") {
+          inputAlt.classList.remove("hidden");
+          inputAlt.required = true;
+        } else {
+          inputAlt.classList.add("hidden");
+          inputAlt.required = false;
+          inputAlt.value = "";
+        }
+      }
+
       document.getElementById("form-fisa-noua").onsubmit = async (e) => {
         e.preventDefault();
         const editId = document.getElementById("edit-fisa-id").value;
         let finalCategorie = document.getElementById("p-cat").value;
         if (finalCategorie === "Alta")
           finalCategorie = document.getElementById("p-cat-alt").value;
+
+        let finalEmitent = document.getElementById("p-emitent").value;
+        if (finalEmitent === "Alta")
+          finalEmitent = document.getElementById("p-emitent-alt").value;
 
         const fisa = {
           nume_client: document.getElementById("c-nume").value,
@@ -1370,6 +1421,7 @@
           data_preluare_fizica:
             document.getElementById("p-dprel").value || null,
           reclamatie_client: document.getElementById("p-rec").value || "",
+          magazin: finalEmitent || "",
         };
 
         let result;
@@ -1440,6 +1492,27 @@
         document.getElementById("p-obs-produs").value = f.obs_produs || "";
         document.getElementById("p-dprel").value = f.data_preluare_fizica || "";
         document.getElementById("p-rec").value = f.reclamatie_client;
+        // Populare câmp Emitent Factură
+        const emitentiStandard = [
+          "ANY-STEF IMPEX S.R.L.", "ARTEMIS S.R.L.", "AUTO NICO-SIMO S.R.L.",
+          "AUTO TUNNING S.R.L.", "BIO-NIRA S.R.L.", "BUXI PROFESIONAL S.R.L.",
+          "ECOTWIN BUSINESS S.R.L.", "ESPERANZA RECYCLING S.R.L.", "EURODINAMIC S.R.L.",
+          "GIRFLEX S.R.L.", "GREEN ELECTRIC CENTER S.R.L.", "MARELVI IMPEX S.R.L.",
+          "MIXX MOTION S.R.L.", "TOMAS BICICLETE SHOP S.R.L."
+        ];
+        if (!f.magazin || f.magazin === "") {
+          document.getElementById("p-emitent").value = "";
+          document.getElementById("p-emitent-alt").classList.add("hidden");
+          document.getElementById("p-emitent-alt").value = "";
+        } else if (emitentiStandard.includes(f.magazin)) {
+          document.getElementById("p-emitent").value = f.magazin;
+          document.getElementById("p-emitent-alt").classList.add("hidden");
+          document.getElementById("p-emitent-alt").value = "";
+        } else {
+          document.getElementById("p-emitent").value = "Alta";
+          document.getElementById("p-emitent-alt").classList.remove("hidden");
+          document.getElementById("p-emitent-alt").value = f.magazin;
+        }
         closeModal();
         switchTab("tab-add");
       }
@@ -1449,6 +1522,7 @@
         document.getElementById("edit-fisa-id").value = "";
         document.getElementById("edit-indicator").classList.add("hidden");
         document.getElementById("p-cat-alt").classList.add("hidden");
+        document.getElementById("p-emitent-alt").classList.add("hidden");
         document.getElementById("submit-btn").innerText = "Salvează Fișa";
         document.getElementById("c-data-auto").value = getRoTime();
         document.getElementById("p-cat").value = "";
@@ -1535,7 +1609,8 @@
                             <p><b>CATEGORIE:</b> ${f.categorie}</p>
                             <p><b>MODEL:</b> ${f.marca_model}</p>
                             <p><b>VIN:</b> <span class="text-blue-700 font-black uppercase font-mono">${f.vin_produs}</span></p>
-                            <p><b class="font-black">EMITENT/FACTURĂ:</b> ${f.nr_factura || "-"} / ${f.data_factura ? f.data_factura.split("-").reverse().join("-") : "-"}</p>
+                            <p><b class="font-black">EMITENT FACTURĂ:</b> ${f.magazin || "-"}</p>
+                            <p><b class="font-black">NR. FACTURĂ:</b> ${f.nr_factura || "-"} / ${f.data_factura ? f.data_factura.split("-").reverse().join("-") : "-"}</p>
                             <p><b>GARANȚIE:</b> ${f.tip_garantie}</p>
                             <p><b class="font-black">OBSERVAȚII:</b> ${f.obs_produs || "-"}</p>
                             <p><b class="font-black text-red-700">DATA PREDĂRII FIZICE:</b> ${f.data_preluare_fizica ? f.data_preluare_fizica.split("-").reverse().join("-") : "-"}</p>
@@ -1888,6 +1963,7 @@
           Categorie: f.categorie,
           "Marca/Model": f.marca_model,
           VIN: f.vin_produs,
+          "Emitent Factura": f.magazin || "",
           "Nr Factura": f.nr_factura,
           "Data Factura": f.data_factura
             ? f.data_factura.split("-").reverse().join("-")
