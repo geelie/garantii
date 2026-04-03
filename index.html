@@ -1499,7 +1499,9 @@
           return;
         }
 
-        if (data) {
+        const rezultat = !!data;
+
+        if (rezultat) {
           icon.textContent = "✔️";
           msg.textContent = "VIN găsit în baza de date ✓";
           msg.className =
@@ -1509,6 +1511,23 @@
           msg.textContent = "VIN negăsit: \u201E" + vin + "\u201D";
           msg.className =
             "mt-1 text-[11px] font-black rounded px-2 py-1 bg-red-100 text-red-800";
+        }
+
+        // Actualizare iconița din lista de fișe dacă suntem în modul editare
+        const editId = document.getElementById("edit-fisa-id").value;
+        if (editId) {
+          const tdList =
+            document.querySelector("td[data-vin='" + vin + "']") ||
+            document.querySelector("td[data-vin='" + vin.toLowerCase() + "']");
+          if (tdList) {
+            const iconList = tdList.querySelector(".vin-check-icon");
+            if (iconList) {
+              iconList.textContent = rezultat ? "✔️" : "❌";
+              iconList.title = rezultat
+                ? "VIN verificat — găsit în baza de date"
+                : "VIN verificat — negăsit în baza de date";
+            }
+          }
         }
 
         msg.classList.remove("hidden");
