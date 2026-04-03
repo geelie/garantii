@@ -1397,7 +1397,8 @@
       async function checkVinList(fise) {
         const vins = fise
           .map((f) => f.vin_produs)
-          .filter((v) => v && v.trim() !== "");
+          .filter((v) => v && v.trim() !== "")
+          .map((v) => v.trim().toUpperCase());
         if (vins.length === 0) return;
 
         const { data, error } = await _supa
@@ -1516,9 +1517,8 @@
         // Actualizare iconița din lista de fișe dacă suntem în modul editare
         const editId = document.getElementById("edit-fisa-id").value;
         if (editId) {
-          const tdList =
-            document.querySelector("td[data-vin='" + vin + "']") ||
-            document.querySelector("td[data-vin='" + vin.toLowerCase() + "']");
+          const tdList = document.querySelector("td[data-vin='" + vin + "']") ||
+                         document.querySelector("td[data-vin='" + vin.toLowerCase() + "']");
           if (tdList) {
             const iconList = tdList.querySelector(".vin-check-icon");
             if (iconList) {
