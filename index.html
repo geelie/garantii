@@ -2073,7 +2073,6 @@
 
         if (id === "tab-users") {
           if (!pinUnlocked) {
-            // anulăm schimbarea de tab și afișăm modalul PIN
             document
               .querySelectorAll(".tab-content")
               .forEach((t) => t.classList.remove("active"));
@@ -2102,7 +2101,6 @@
         window.scrollTo(0, 0);
       }
 
-      // ── ACCES SECȚIUNE RESTRICȚIONATĂ ────────────────────────────────────────
       let _cfg = { k: "1234" };
       let pinUnlocked = false;
 
@@ -2196,14 +2194,13 @@
         document.getElementById("cp-confirm").value = "";
         setTimeout(() => closeChangePinModal(), 1200);
       }
-      // ─────────────────────────────────────────────────────────────────────────
 
       function closeModal() {
         document.getElementById("modal-view").classList.add("hidden");
       }
       function filterTable() {
         currentSearchQuery = document.getElementById("search-box").value.trim();
-        // Debounce: așteptăm 350ms după ultimul caracter înainte de a interoga serverul
+
         clearTimeout(_searchDebounceTimer);
         _searchDebounceTimer = setTimeout(() => {
           loadFise(1);
@@ -2222,11 +2219,10 @@
         let dataToExport = [];
 
         if (type === "current") {
-          // Exportăm TOATE fișele filtrate de pe server (nu doar pagina curentă)
+
           if (totalFilteredCount === 0)
             return alert("Nu există date vizibile de exportat!");
 
-          // Fetch toate fișele filtrate de pe server
           let exportQuery = buildBaseQuery(false)
             .order("updated_at", { ascending: false })
             .range(0, totalFilteredCount - 1);
@@ -2478,10 +2474,6 @@
         modWrapper.innerHTML = `<input type="text" id="p-mod" placeholder="Introduceți Marcă / Model" class="w-full p-3 border-2 border-slate-200 rounded-lg font-semibold text-sm">`;
       }
 
-      // ============================================================
-      // DRIVE MODAL — funcții independente, nu modifică nimic existent
-      // ============================================================
-
       async function openDriveModal(fisaId) {
         document.getElementById("drive-modal-fisa-id").value = fisaId;
         document.getElementById("drive-link-input").value = "";
@@ -2663,7 +2655,6 @@
       </div>
     </div>
 
-    <!-- MODAL DRIVE LINK — independent, nu afectează nimic existent -->
     <div
       id="modal-drive"
       class="fixed inset-0 bg-black/70 hidden z-[70] flex items-center justify-center p-4 no-print"
@@ -2674,7 +2665,6 @@
       >
         <input type="hidden" id="drive-modal-fisa-id" />
 
-        <!-- Header -->
         <div
           class="p-4 bg-slate-900 text-white flex justify-between items-center"
         >
@@ -2723,9 +2713,8 @@
           </button>
         </div>
 
-        <!-- Butoane principale -->
         <div class="p-5 flex flex-col gap-3">
-          <!-- Buton Adaugă calea -->
+
           <button
             onclick="showDriveLinkInput()"
             class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-black text-sm uppercase transition active:scale-95"
@@ -2734,7 +2723,6 @@
             Adaugă calea
           </button>
 
-          <!-- Câmp input link (ascuns inițial) -->
           <div
             id="drive-link-input-area"
             class="flex flex-col gap-2"
@@ -2755,7 +2743,6 @@
             </button>
           </div>
 
-          <!-- Buton Vezi imagini (vizibil doar dacă există link) -->
           <button
             id="drive-view-btn"
             class="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-900 text-white px-4 py-3 rounded-xl font-black text-sm uppercase transition active:scale-95"
@@ -2796,7 +2783,6 @@
         </div>
       </div>
     </div>
-    <!-- MODAL PIN UTILIZATORI — independent, nu afectează nimic existent -->
     <div
       id="modal-pin"
       class="fixed inset-0 bg-black/80 hidden z-[90] flex items-center justify-center p-4 no-print"
@@ -2852,7 +2838,6 @@
       </div>
     </div>
 
-    <!-- MODAL SCHIMBARE PIN — independent, nu afectează nimic existent -->
     <div
       id="modal-change-pin"
       class="fixed inset-0 bg-black/80 hidden z-[95] flex items-center justify-center p-4 no-print"
@@ -2934,7 +2919,6 @@
       </div>
     </div>
 
-    <!-- MODAL LOG — independent, nu afectează nimic existent -->
     <div
       id="modal-log"
       class="fixed inset-0 bg-black/70 hidden z-[70] flex items-center justify-center p-4 no-print"
@@ -2943,7 +2927,6 @@
       <div
         class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
       >
-        <!-- Header -->
         <div
           class="p-4 bg-slate-900 text-white flex justify-between items-center"
         >
@@ -2963,7 +2946,6 @@
             &times;
           </button>
         </div>
-        <!-- Tabel log -->
         <div class="p-4 overflow-x-auto">
           <table class="w-full text-left">
             <thead
@@ -2978,7 +2960,6 @@
             <tbody id="log-rows" class="divide-y divide-slate-100"></tbody>
           </table>
         </div>
-        <!-- Footer -->
         <div class="px-4 pb-4"></div>
       </div>
     </div>
