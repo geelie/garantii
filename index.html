@@ -2073,6 +2073,7 @@
 
         if (id === "tab-users") {
           if (!pinUnlocked) {
+            // anulăm schimbarea de tab și afișăm modalul PIN
             document
               .querySelectorAll(".tab-content")
               .forEach((t) => t.classList.remove("active"));
@@ -2101,11 +2102,25 @@
         window.scrollTo(0, 0);
       }
 
-      let _cfg = { k: "1945" };
+      let _cfg = { k: null };
       let pinUnlocked = false;
 
+      async function _loadCfg() {
+        const { data } = await _supa
+          .from("app_config")
+          .select("value")
+          .eq("key", "access_pin")
+          .maybeSingle();
+        _cfg.k = data?.value || "1945";
+      }
+      _loadCfg();
+
       function confirmPin() {
-        const val = document.getElementById("pin-input").value.trim();
+        const val = document.getElementById("pin-input").value;
+        if (_cfg.k === null) {
+          document.getElementById("pin-error").classList.remove("hidden");
+          return;
+        }
         if (val === _cfg.k) {
           pinUnlocked = true;
           document.getElementById("modal-pin").classList.add("hidden");
@@ -2160,12 +2175,15 @@
         document.getElementById("modal-change-pin").classList.add("hidden");
       }
 
-      function doChangePin() {
-        const oldVal = document.getElementById("cp-old").value.trim();
-        const newVal = document.getElementById("cp-new").value.trim();
-        const confVal = document.getElementById("cp-confirm").value.trim();
+      async function doChangePin() {
+        const oldVal = document.getElementById("cp-old").value;
+        const newVal = document.getElementById("cp-new").value;
+        const confVal = document.getElementById("cp-confirm").value;
         const errEl = document.getElementById("cp-error");
         const okEl = document.getElementById("cp-success");
+        const btnModifica = document.querySelector(
+          "#modal-change-pin button[onclick='doChangePin()']",
+        );
         errEl.classList.add("hidden");
         okEl.classList.add("hidden");
         if (oldVal !== _cfg.k) {
@@ -2176,7 +2194,7 @@
           return;
         }
         if (newVal.length < 4) {
-          errEl.innerText = "PIN-ul nou trebuie să aibă minim 4 cifre.";
+          errEl.innerText = "PIN-ul nou trebuie să aibă minim 4 caractere.";
           errEl.classList.remove("hidden");
           return;
         }
@@ -2187,7 +2205,21 @@
           document.getElementById("cp-confirm").focus();
           return;
         }
+        btnModifica.disabled = true;
+        btnModifica.innerText = "Se salvează...";
+        const { error } = await _supa
+          .from("app_config")
+          .update({ value: newVal })
+          .eq("key", "access_pin");
+        btnModifica.disabled = false;
+        btnModifica.innerText = "Modifică PIN";
+        if (error) {
+          errEl.innerText = "Eroare Supabase: " + error.message;
+          errEl.classList.remove("hidden");
+          return;
+        }
         _cfg.k = newVal;
+        pinUnlocked = false;
         okEl.classList.remove("hidden");
         document.getElementById("cp-old").value = "";
         document.getElementById("cp-new").value = "";
@@ -2200,7 +2232,7 @@
       }
       function filterTable() {
         currentSearchQuery = document.getElementById("search-box").value.trim();
-
+        // Debounce: așteptăm 350ms după ultimul caracter înainte de a interoga serverul
         clearTimeout(_searchDebounceTimer);
         _searchDebounceTimer = setTimeout(() => {
           loadFise(1);
@@ -2219,10 +2251,11 @@
         let dataToExport = [];
 
         if (type === "current") {
-
+          // Exportăm TOATE fișele filtrate de pe server (nu doar pagina curentă)
           if (totalFilteredCount === 0)
             return alert("Nu există date vizibile de exportat!");
 
+          // Fetch toate fișele filtrate de pe server
           let exportQuery = buildBaseQuery(false)
             .order("updated_at", { ascending: false })
             .range(0, totalFilteredCount - 1);
@@ -2714,7 +2747,6 @@
         </div>
 
         <div class="p-5 flex flex-col gap-3">
-
           <button
             onclick="showDriveLinkInput()"
             class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-black text-sm uppercase transition active:scale-95"
@@ -2810,14 +2842,12 @@
             Introduceți codul PIN
           </p>
           <input
-            type="password"
+            type="text"
             id="pin-input"
-            maxlength="4"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            placeholder="● ● ● ●"
+            maxlength="20"
+            placeholder="Cod PIN"
             onkeydown="if (event.key === 'Enter') confirmPin();"
-            class="w-full text-center text-2xl font-black tracking-[0.5em] p-3 border-2 border-slate-300 rounded-xl outline-none focus:border-blue-500 transition letter-spacing-widest"
+            class="w-full text-center text-2xl font-black tracking-[0.5em] p-3 border-2 border-slate-300 rounded-xl outline-none focus:border-blue-500 transition"
           />
           <p id="pin-error" class="text-red-600 text-xs font-black hidden">
             PIN incorect. Încercați din nou.
@@ -2861,10 +2891,9 @@
         </div>
         <div class="p-6 flex flex-col gap-3">
           <input
-            type="password"
+            type="text"
             id="cp-old"
-            maxlength="8"
-            inputmode="numeric"
+            maxlength="20"
             placeholder="PIN vechi"
             onkeydown="
               if (event.key === 'Enter')
@@ -2873,10 +2902,9 @@
             class="w-full text-center text-lg font-black tracking-widest p-3 border-2 border-slate-300 rounded-xl outline-none focus:border-slate-600 transition"
           />
           <input
-            type="password"
+            type="text"
             id="cp-new"
-            maxlength="8"
-            inputmode="numeric"
+            maxlength="20"
             placeholder="PIN nou"
             onkeydown="
               if (event.key === 'Enter')
@@ -2885,10 +2913,9 @@
             class="w-full text-center text-lg font-black tracking-widest p-3 border-2 border-slate-300 rounded-xl outline-none focus:border-blue-500 transition"
           />
           <input
-            type="password"
+            type="text"
             id="cp-confirm"
-            maxlength="8"
-            inputmode="numeric"
+            maxlength="20"
             placeholder="Confirmă PIN nou"
             onkeydown="if (event.key === 'Enter') doChangePin();"
             class="w-full text-center text-lg font-black tracking-widest p-3 border-2 border-slate-300 rounded-xl outline-none focus:border-blue-500 transition"
