@@ -928,13 +928,13 @@
         });
       }
 
-      window.onload = () => {
+      document.addEventListener("DOMContentLoaded", () => {
         const saved = localStorage.getItem("geeli_session");
         if (saved) {
           const creds = JSON.parse(saved);
           handleLogin(creds.u, creds.p);
         }
-      };
+      });
 
       function showAuth(type) {
         document
@@ -975,6 +975,7 @@
             document
               .getElementById("admin-export-area")
               .classList.remove("hidden");
+            _loadCfg();
           }
           document.getElementById("c-data-auto").value = getRoTime();
           const hRow = document.getElementById("table-head-row");
@@ -1004,27 +1005,6 @@
           else localStorage.removeItem("geeli_session");
         }
       }
-      async function updateArchiveCounter() {
-        if (activeUser.rol !== "admin") return;
-
-        const { count, error } = await _supa
-          .from("fise")
-          .select("*", { count: "exact", head: true })
-          .eq("is_deleted", true);
-
-        if (!error) {
-          const display = document.getElementById("archive-count");
-          display.innerText = count;
-          if (count > 0) {
-            display.classList.remove("text-green-600");
-            display.classList.add("text-red-600");
-          } else {
-            display.classList.remove("text-red-600");
-            display.classList.add("text-green-600");
-          }
-        }
-      }
-
       async function handleResetPassword() {
         const u = document.getElementById("reset-user").value.trim();
         const oldP = document.getElementById("reset-old-pass").value.trim();
@@ -1080,9 +1060,8 @@
           .select("*")
           .order("nume_complet");
         const body = document.getElementById("users-rows");
-        body.innerHTML = "";
-        data?.forEach((u) => {
-          body.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50">
+        const rows = (data || []).map(
+          (u) => `<tr class="border-b border-slate-100 hover:bg-slate-50">
                     <td class="p-4 font-black text-slate-900">${u.nume_complet}</td>
                     <td class="p-4 font-mono font-bold text-blue-600">${u.username}</td>
                     <td class="p-4 text-xs font-bold text-slate-700">${u.service}</td>
@@ -1102,8 +1081,9 @@
                             : '<span class="text-[9px] italic text-slate-400">Activ</span>'
                         }
                     </td>
-                </tr>`;
-        });
+                </tr>`,
+        );
+        body.innerHTML = rows.join("");
       }
 
       async function toggleUserRole(id, currentRole) {
@@ -1359,6 +1339,9 @@
           return;
         }
 
+        document.getElementById("fise-rows").innerHTML =
+          '<tr><td colspan="10" class="p-10 text-center font-black text-slate-400 italic">Se încarcă...</td></tr>';
+
         currentPage = page;
         updateArchiveCounter();
 
@@ -1401,10 +1384,12 @@
           return;
         }
 
-        data.forEach((f, i) => {
-          const globalNrCrt = totalFilteredCount - offset - i;
-          body.innerHTML += buildRow(f, globalNrCrt);
-        });
+        body.innerHTML = data
+          .map((f, i) => {
+            const globalNrCrt = totalFilteredCount - offset - i;
+            return buildRow(f, globalNrCrt);
+          })
+          .join("");
 
         renderPagination(page, totalPages, totalFilteredCount, totalFiseCount);
         checkVinList(data);
@@ -1652,12 +1637,11 @@
           0,
           16,
         );
-        const categoriiStandard = [
-          "Bicicleta electrica",
-          "Tricicleta electrica",
-          "Scuter electric",
-          "Cvadraciclu electric",
-        ];
+        const categoriiStandard = Array.from(
+          document.getElementById("p-cat").options,
+        )
+          .map((o) => o.value)
+          .filter((v) => v && v !== "Alta");
         if (categoriiStandard.includes(f.categorie)) {
           document.getElementById("p-cat").value = f.categorie;
           document.getElementById("p-cat-alt").classList.add("hidden");
@@ -1677,22 +1661,11 @@
         document.getElementById("p-dprel").value = f.data_preluare_fizica || "";
         document.getElementById("p-rec").value = f.reclamatie_client;
         // Populare câmp Emitent Factură
-        const emitentiStandard = [
-          "ANY-STEF IMPEX S.R.L.",
-          "ARTEMIS S.R.L.",
-          "AUTO NICO-SIMO S.R.L.",
-          "AUTO TUNNING S.R.L.",
-          "BIO-NIRA S.R.L.",
-          "MAGAZIN BUXI PROFESIONAL S.R.L.",
-          "ECOTWIN BUSINESS S.R.L.",
-          "ESPERANZA RECYCLING S.R.L.",
-          "EURODINAMIC S.R.L.",
-          "GIRFLEX S.R.L.",
-          "GREEN ELECTRIC CENTER S.R.L.",
-          "MARELVI IMPEX S.R.L.",
-          "SHOP MIXX MOTION S.R.L.",
-          "TOMAS BICICLETE SHOP S.R.L.",
-        ];
+        const emitentiStandard = Array.from(
+          document.getElementById("p-emitent").options,
+        )
+          .map((o) => o.value)
+          .filter((v) => v && v !== "Alta");
         if (!f.magazin || f.magazin === "") {
           document.getElementById("p-emitent").value = "";
           document.getElementById("p-emitent-alt").classList.add("hidden");
@@ -2090,7 +2063,7 @@
             document
               .getElementById("btn-list")
               .classList.add("border-b-4", "border-blue-600", "text-blue-600");
-            document.getElementById("modal-pin").classList.remove("hidden");
+            document.getElementById("modal-pin").style.display = "flex";
             setTimeout(() => document.getElementById("pin-input").focus(), 50);
             return;
           }
@@ -2113,7 +2086,6 @@
           .maybeSingle();
         _cfg.k = data?.value || "1945";
       }
-      _loadCfg();
 
       function confirmPin() {
         const val = document.getElementById("pin-input").value;
@@ -2123,7 +2095,7 @@
         }
         if (val === _cfg.k) {
           pinUnlocked = true;
-          document.getElementById("modal-pin").classList.add("hidden");
+          document.getElementById("modal-pin").style.display = "none";
           document.getElementById("pin-input").value = "";
           document.getElementById("pin-error").classList.add("hidden");
           _doSwitchToUsers();
@@ -2135,7 +2107,7 @@
       }
 
       function closePinModal() {
-        document.getElementById("modal-pin").classList.add("hidden");
+        document.getElementById("modal-pin").style.display = "none";
         document.getElementById("pin-input").value = "";
         document.getElementById("pin-error").classList.add("hidden");
       }
@@ -2162,7 +2134,7 @@
       }
 
       function openChangePinModal() {
-        document.getElementById("modal-change-pin").classList.remove("hidden");
+        document.getElementById("modal-change-pin").style.display = "flex";
         document.getElementById("cp-old").value = "";
         document.getElementById("cp-new").value = "";
         document.getElementById("cp-confirm").value = "";
@@ -2172,7 +2144,7 @@
       }
 
       function closeChangePinModal() {
-        document.getElementById("modal-change-pin").classList.add("hidden");
+        document.getElementById("modal-change-pin").style.display = "none";
       }
 
       async function doChangePin() {
@@ -2350,17 +2322,16 @@
         }
 
         const body = document.getElementById("archive-rows");
-        body.innerHTML = "";
 
         if (data.length === 0) {
           body.innerHTML =
             '<tr><td colspan="4" class="p-10 text-center text-slate-400 italic">Nu există fișe în arhivă.</td></tr>';
         } else {
-          data.forEach((f) => {
+          const rows = data.map((f) => {
             const dataSters = f.deleted_at
               ? new Date(f.deleted_at).toLocaleString("ro-RO")
               : "-";
-            body.innerHTML += `
+            return `
         <tr class="hover:bg-red-50 transition-colors border-b border-slate-100">
             <td class="p-3 font-mono text-blue-700">${f.id}</td>
             <td class="p-3">${dataSters}</td>
@@ -2373,6 +2344,7 @@
             </td>
         </tr>`;
           });
+          body.innerHTML = rows.join("");
         }
 
         document.getElementById("modal-archive").classList.remove("hidden");
@@ -2507,7 +2479,7 @@
         modWrapper.innerHTML = `<input type="text" id="p-mod" placeholder="Introduceți Marcă / Model" class="w-full p-3 border-2 border-slate-200 rounded-lg font-semibold text-sm">`;
       }
 
-      async function openDriveModal(fisaId) {
+      function openDriveModal(fisaId, driveLink) {
         document.getElementById("drive-modal-fisa-id").value = fisaId;
         document.getElementById("drive-link-input").value = "";
         document.getElementById("drive-link-input-area").style.display = "none";
@@ -2516,21 +2488,11 @@
         document.getElementById("drive-delete-btn").style.display = "none";
         document.getElementById("modal-drive").classList.remove("hidden");
 
-        const { data, error } = await _supa
-          .from("fise")
-          .select("drive_link")
-          .eq("id", fisaId)
-          .maybeSingle();
-
-        if (
-          !error &&
-          data &&
-          data.drive_link &&
-          data.drive_link.trim() !== ""
-        ) {
+        const link = (driveLink || "").trim();
+        if (link !== "") {
           const viewBtn = document.getElementById("drive-view-btn");
           viewBtn.style.display = "flex";
-          viewBtn.onclick = () => window.open(data.drive_link.trim(), "_blank");
+          viewBtn.onclick = () => window.open(link, "_blank");
 
           const deleteBtn = document.getElementById("drive-delete-btn");
           deleteBtn.style.display = "flex";
@@ -2817,7 +2779,8 @@
     </div>
     <div
       id="modal-pin"
-      class="fixed inset-0 bg-black/80 hidden z-[90] flex items-center justify-center p-4 no-print"
+      class="fixed inset-0 bg-black/80 z-[90] items-center justify-center p-4 no-print"
+      style="display: none"
     >
       <div
         class="bg-white w-full max-w-xs rounded-2xl shadow-2xl overflow-hidden border-t-4 border-blue-600"
@@ -2870,7 +2833,8 @@
 
     <div
       id="modal-change-pin"
-      class="fixed inset-0 bg-black/80 hidden z-[95] flex items-center justify-center p-4 no-print"
+      class="fixed inset-0 bg-black/80 z-[95] items-center justify-center p-4 no-print"
+      style="display: none"
       onclick="if (event.target === this) closeChangePinModal();"
     >
       <div
