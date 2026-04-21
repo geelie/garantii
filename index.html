@@ -791,6 +791,20 @@
                 <div>
                   <label
                     class="text-[9px] font-black text-slate-800 uppercase ml-1"
+                    >KM. Parcurși la Data Sesizării</label
+                  >
+                  <input
+                    type="number"
+                    id="p-km-sesizare"
+                    placeholder="KM la data sesizării"
+                    min="0"
+                    required
+                    class="w-full p-3 border-2 border-slate-200 rounded-lg text-sm font-bold"
+                  />
+                </div>
+                <div>
+                  <label
+                    class="text-[9px] font-black text-slate-800 uppercase ml-1"
                     >Stare</label
                   >
                   <select
@@ -1576,6 +1590,10 @@
           obs_produs: document.getElementById("p-obs-produs").value || "",
           data_preluare_fizica:
             document.getElementById("p-dprel").value || null,
+          km_la_sesizare:
+            document.getElementById("p-km-sesizare").value !== ""
+              ? parseInt(document.getElementById("p-km-sesizare").value)
+              : null,
           reclamatie_client: document.getElementById("p-rec").value || "",
           magazin: finalEmitent || "",
         };
@@ -1659,6 +1677,8 @@
         document.getElementById("p-gar").value = f.tip_garantie;
         document.getElementById("p-obs-produs").value = f.obs_produs || "";
         document.getElementById("p-dprel").value = f.data_preluare_fizica || "";
+        document.getElementById("p-km-sesizare").value =
+          f.km_la_sesizare != null ? f.km_la_sesizare : "";
         document.getElementById("p-rec").value = f.reclamatie_client;
         // Populare câmp Emitent Factură
         const emitentiStandard = Array.from(
@@ -1779,6 +1799,7 @@
                             <p><b>VIN:</b> <span class="text-blue-700 font-black uppercase font-mono">${f.vin_produs}</span></p>
                             <p><b class="font-black">EMITENT FACTURĂ:</b> ${f.magazin || "-"}</p>
                             <p><b class="font-black">NR. FACTURĂ:</b> ${f.nr_factura || "-"} / ${f.data_factura ? f.data_factura.split("-").reverse().join("-") : "-"}</p>
+                            <p><b class="font-black">KM. LA DATA SESIZARII:</b> ${f.km_la_sesizare != null ? f.km_la_sesizare + " km" : "-"}</p>
                             <p><b>GARANȚIE:</b> ${f.tip_garantie}</p>
                             <p><b class="font-black">OBSERVAȚII:</b> ${f.obs_produs || "-"}</p>
                             <p><b class="font-black text-red-700">DATA PREDĂRII FIZICE:</b> ${f.data_preluare_fizica ? f.data_preluare_fizica.split("-").reverse().join("-") : "-"}</p>
@@ -2289,6 +2310,7 @@
           "Data Preluare Fizica": f.data_preluare_fizica
             ? f.data_preluare_fizica.split("-").reverse().join("-")
             : "",
+          "KM Sesizare": f.km_la_sesizare != null ? f.km_la_sesizare : "",
           "Reclamatie Client": f.reclamatie_client,
           Status: f.status,
           "Alocat Catre": f.alocat_catre,
