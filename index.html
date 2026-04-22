@@ -791,6 +791,101 @@
                 <div>
                   <label
                     class="text-[9px] font-black text-slate-800 uppercase ml-1"
+                    >Adaugă / Vezi Factură</label
+                  >
+                  <div class="flex items-center gap-2 mt-1">
+                    <input
+                      type="file"
+                      id="factura-file-input"
+                      accept="image/*,application/pdf"
+                      class="hidden"
+                      onchange="handleFacturaFileSelected()"
+                    />
+                    <button
+                      type="button"
+                      id="factura-upload-btn"
+                      onclick="
+                        document.getElementById('factura-file-input').click()
+                      "
+                      title="Adaugă factură (imagine sau PDF)"
+                      class="flex items-center justify-center gap-1 bg-slate-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-md font-semibold text-xs transition active:scale-95"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="13"
+                        height="13"
+                        fill="white"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                      </svg>
+                      Adaugă
+                    </button>
+                    <button
+                      type="button"
+                      id="factura-view-btn"
+                      onclick="viewFactura()"
+                      title="Vizualizează factura salvată"
+                      class="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md font-semibold text-xs transition active:scale-95 bg-slate-200 text-slate-400 cursor-not-allowed"
+                      disabled
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path
+                          d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                        />
+                      </svg>
+                      Vezi
+                    </button>
+                    <button
+                      type="button"
+                      id="factura-delete-btn"
+                      onclick="deleteFactura()"
+                      title="Șterge factura atașată"
+                      class="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md font-semibold text-xs transition active:scale-95 bg-slate-200 text-slate-400 cursor-not-allowed"
+                      disabled
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path
+                          d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                        />
+                      </svg>
+                      Șterge
+                    </button>
+                    <span
+                      id="factura-status-text"
+                      class="text-[10px] font-black text-slate-400 italic"
+                    ></span>
+                  </div>
+                  <div id="factura-upload-progress" class="hidden mt-2">
+                    <div class="w-full bg-slate-200 rounded-full h-1.5">
+                      <div
+                        id="factura-progress-bar"
+                        class="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                        style="width: 0%"
+                      ></div>
+                    </div>
+                    <p
+                      class="text-[9px] font-black text-blue-700 mt-1 uppercase tracking-wider"
+                    >
+                      Se încarcă...
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <label
+                    class="text-[9px] font-black text-slate-800 uppercase ml-1"
                     >KM. Parcurși la Data Sesizării</label
                   >
                   <input
@@ -1001,8 +1096,11 @@
             `
     <th class="p-4 border-r border-slate-400">ID Fișă</th>
     <th class="p-4 border-r border-slate-400">Client / Telefon / Județ</th>
-    <th class="p-4 border-r border-slate-400">Produs / VIN</th>
-    <th class="p-4 border-r border-slate-400 text-slate-900">Actualizat</th>
+    <th class="p-4 border-r border-slate-400">Produs / VIN</th>` +
+            (activeUser.rol === "admin"
+              ? '<th class="p-4 border-r border-slate-400 text-center">Factură</th>'
+              : "") +
+            `<th class="p-4 border-r border-slate-400 text-slate-900">Actualizat</th>
     <th class="p-4 border-r border-slate-400">Vechime</th>
     <th class="p-4 border-r border-slate-400">Status</th>
     <th class="p-4 border-r border-slate-400">Service</th>` +
@@ -1144,7 +1242,7 @@
           activeUser.rol === "admin" || activeUser.service === "RIDICARE"
             ? `<td class="p-4 font-black text-[10px] ${transportStyle}">${f.tip_transport || ""}</td>`
             : "";
-        return `<tr onclick='if(!event.target.closest(".drive-btn") && !event.target.closest(".log-btn")) openFisa(${JSON.stringify(f)})' class="border-b border-slate-300 hover:bg-slate-50 cursor-pointer transition-colors">
+        return `<tr onclick='if(!event.target.closest(".drive-btn") && !event.target.closest(".log-btn") && !event.target.closest(".factura-btn")) openFisa(${JSON.stringify(f)})' class="border-b border-slate-300 hover:bg-slate-50 cursor-pointer transition-colors">
         ${activeUser.rol === "admin" || activeUser.rol === "user" ? `<td class="p-4 border-r border-slate-300 font-black text-slate-400 text-xs whitespace-nowrap">${globalNrCrt}${!f.data_preluare_fizica ? `<sup style="display:inline-block;width:7px;height:7px;background:#ef4444;border-radius:50%;margin-left:3px;vertical-align:super;line-height:1;" title="Lipsă Data Predării Fizice"></sup>` : ""}</td>` : ""}
 
     <td class="p-4 border-r border-slate-300 font-mono font-black text-blue-700 text-xs">
@@ -1206,6 +1304,39 @@
         <span class="text-blue-600 font-black uppercase text-[10px]">${f.vin_produs}</span>
         <span class="vin-check-icon ml-1 text-xs"></span>
     </td>
+    ${
+      activeUser.rol === "admin"
+        ? `<td class="p-2 border-r border-slate-300 text-center align-middle" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-center gap-1">
+            <button
+                type="button"
+                class="factura-btn flex items-center justify-center bg-slate-600 hover:bg-blue-700 text-white rounded-lg transition active:scale-95"
+                style="width:28px;height:28px;padding:0;flex-shrink:0;"
+                title="Adaugă / Înlocuiește factură"
+                onclick="event.stopPropagation(); triggerFacturaUploadRow('${f.id}', this)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </button>
+            <button
+                type="button"
+                class="factura-btn flex items-center justify-center rounded-lg transition active:scale-95 ${f.factura_path ? "bg-slate-600 hover:bg-blue-700 text-white cursor-pointer" : "bg-slate-200 text-slate-400 cursor-not-allowed"}"
+                style="width:28px;height:28px;padding:0;flex-shrink:0;"
+                title="${f.factura_path ? "Vizualizează factura" : "Nicio factură atașată"}"
+                ${f.factura_path ? `onclick="event.stopPropagation(); viewFacturaRow('${f.factura_path}')"` : 'disabled onclick="event.stopPropagation()"'}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </button>
+            <button
+                type="button"
+                class="factura-btn flex items-center justify-center rounded-lg transition active:scale-95 ${f.factura_path ? "bg-red-600 hover:bg-red-700 text-white cursor-pointer" : "bg-slate-200 text-slate-400 cursor-not-allowed"}"
+                style="width:28px;height:28px;padding:0;flex-shrink:0;"
+                title="${f.factura_path ? "Șterge factura" : "Nicio factură atașată"}"
+                ${f.factura_path ? `onclick="event.stopPropagation(); deleteFacturaRow('${f.id}', '${f.factura_path}', this)"` : 'disabled onclick="event.stopPropagation()"'}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            </button>
+            <input type="file" accept="image/*,application/pdf" class="hidden factura-row-input" onchange="handleFacturaRowUpload(event, '${f.id}', this)">
+        </div>
+    </td>`
+        : ""
+    }
     <td class="p-2 md:p-4 border-r border-slate-300 whitespace-nowrap">
     <span class="text-[8px] md:text-[9px] font-bold text-blue-900 bg-slate-200 px-1 py-1 rounded-md border border-slate-300 uppercase">
         ${formatRelativ(f.updated_at)}
@@ -1680,6 +1811,8 @@
         document.getElementById("p-km-sesizare").value =
           f.km_la_sesizare != null ? f.km_la_sesizare : "";
         document.getElementById("p-rec").value = f.reclamatie_client;
+        // Populare stare factură
+        refreshFacturaUI(f.factura_path || null);
         // Populare câmp Emitent Factură
         const emitentiStandard = Array.from(
           document.getElementById("p-emitent").options,
@@ -1714,6 +1847,7 @@
         document.getElementById("p-cat").value = "";
         document.getElementById("vin-status-icon").textContent = "";
         document.getElementById("vin-status-msg").classList.add("hidden");
+        resetFacturaUI();
         renderModelInput();
       }
 
@@ -2631,6 +2765,401 @@
         closeDriveModal();
         loadFise(currentPage);
       }
+
+      // ── FACTURA STORAGE ──────────────────────────────────────────────────
+
+      // Starea curentă a facturii în formularul de editare/adăugare
+      let _currentFacturaPath = null;
+
+      function resetFacturaUI() {
+        _currentFacturaPath = null;
+        document.getElementById("factura-file-input").value = "";
+        document.getElementById("factura-status-text").textContent = "";
+        document
+          .getElementById("factura-upload-progress")
+          .classList.add("hidden");
+        document.getElementById("factura-progress-bar").style.width = "0%";
+        _setFacturaViewBtn(false);
+      }
+
+      function refreshFacturaUI(path) {
+        _currentFacturaPath = path || null;
+        if (_currentFacturaPath) {
+          const fileName = _currentFacturaPath.split("/").pop();
+          document.getElementById("factura-status-text").textContent =
+            "✓ " + fileName;
+          document.getElementById("factura-status-text").className =
+            "text-[10px] font-black text-green-700 italic";
+          _setFacturaViewBtn(true);
+        } else {
+          document.getElementById("factura-status-text").textContent =
+            "Nicio factură atașată";
+          document.getElementById("factura-status-text").className =
+            "text-[10px] font-black text-slate-400 italic";
+          _setFacturaViewBtn(false);
+        }
+      }
+
+      function _setFacturaViewBtn(active) {
+        const btnView = document.getElementById("factura-view-btn");
+        const btnDelete = document.getElementById("factura-delete-btn");
+        if (active) {
+          btnView.disabled = false;
+          btnView.className =
+            "flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md font-semibold text-xs transition active:scale-95 bg-slate-600 hover:bg-blue-700 text-white cursor-pointer";
+          btnDelete.disabled = false;
+          btnDelete.className =
+            "flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md font-semibold text-xs transition active:scale-95 bg-red-500 hover:bg-red-600 text-white cursor-pointer";
+        } else {
+          btnView.disabled = true;
+          btnView.className =
+            "flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md font-semibold text-xs transition active:scale-95 bg-slate-200 text-slate-400 cursor-not-allowed";
+          btnDelete.disabled = true;
+          btnDelete.className =
+            "flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md font-semibold text-xs transition active:scale-95 bg-slate-200 text-slate-400 cursor-not-allowed";
+        }
+      }
+
+      async function handleFacturaFileSelected() {
+        const input = document.getElementById("factura-file-input");
+        const file = input.files && input.files[0];
+        if (!file) return;
+
+        const editId = document.getElementById("edit-fisa-id").value;
+        if (!editId) {
+          alert("Salvați mai întâi fișa înainte de a atașa o factură.");
+          input.value = "";
+          return;
+        }
+
+        // Validare tip fișier
+        const allowed = [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "image/gif",
+          "application/pdf",
+        ];
+        if (!allowed.includes(file.type)) {
+          alert(
+            "Tip fișier neacceptat. Folosiți imagine (JPG, PNG, WEBP) sau PDF.",
+          );
+          input.value = "";
+          return;
+        }
+
+        // Validare dimensiune (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          alert(
+            "Fișierul este prea mare. Dimensiunea maximă acceptată este 10 MB.",
+          );
+          input.value = "";
+          return;
+        }
+
+        const ext = file.name.split(".").pop().toLowerCase();
+        const storagePath = editId + "/factura." + ext;
+
+        // Afișare progress
+        const progressWrap = document.getElementById("factura-upload-progress");
+        const progressBar = document.getElementById("factura-progress-bar");
+        progressWrap.classList.remove("hidden");
+        progressBar.style.width = "30%";
+
+        // Dacă există deja un fișier vechi, îl ștergem mai întâi
+        if (_currentFacturaPath) {
+          await _supa.storage.from("facturi").remove([_currentFacturaPath]);
+        }
+
+        progressBar.style.width = "60%";
+
+        // Upload în Supabase Storage
+        const { error: uploadError } = await _supa.storage
+          .from("facturi")
+          .upload(storagePath, file, { upsert: true, contentType: file.type });
+
+        if (uploadError) {
+          progressWrap.classList.add("hidden");
+          progressBar.style.width = "0%";
+          input.value = "";
+          alert("Eroare la încărcare: " + uploadError.message);
+          return;
+        }
+
+        progressBar.style.width = "90%";
+
+        // Salvare cale în baza de date
+        const { error: dbError } = await _supa
+          .from("fise")
+          .update({ factura_path: storagePath })
+          .eq("id", editId);
+
+        progressBar.style.width = "100%";
+
+        if (dbError) {
+          alert(
+            "Fișierul a fost încărcat dar nu s-a putut salva calea în baza de date: " +
+              dbError.message,
+          );
+        } else {
+          // Actualizare UI
+          refreshFacturaUI(storagePath);
+          // Actualizare currentFisa dacă e deschisă
+          if (currentFisa && currentFisa.id === editId) {
+            currentFisa.factura_path = storagePath;
+          }
+          // Log acțiune
+          await _supa.from("fise_log").insert([
+            {
+              fisa_id: editId,
+              actiune: "factură atașată",
+              data_ora: new Date().toISOString(),
+              user_username: activeUser.username,
+              user_nume: activeUser.nume_complet,
+            },
+          ]);
+        }
+
+        setTimeout(() => {
+          progressWrap.classList.add("hidden");
+          progressBar.style.width = "0%";
+        }, 800);
+
+        input.value = "";
+      }
+
+      function viewFactura() {
+        if (!_currentFacturaPath) return;
+        const { data } = _supa.storage
+          .from("facturi")
+          .getPublicUrl(_currentFacturaPath);
+        if (data && data.publicUrl) {
+          window.open(data.publicUrl, "_blank");
+        } else {
+          alert("Nu s-a putut genera URL-ul pentru factură.");
+        }
+      }
+
+      async function deleteFactura() {
+        if (!_currentFacturaPath) return;
+        if (!confirm("Sigur doriți să ștergeți factura atașată acestei fișe?"))
+          return;
+        const editId = document.getElementById("edit-fisa-id").value;
+        if (!editId) return;
+
+        await _supa.storage.from("facturi").remove([_currentFacturaPath]);
+        const { error } = await _supa
+          .from("fise")
+          .update({ factura_path: null })
+          .eq("id", editId);
+
+        if (error) {
+          alert("Eroare la ștergerea facturii: " + error.message);
+          return;
+        }
+        await _supa.from("fise_log").insert([
+          {
+            fisa_id: editId,
+            actiune: "factură ștearsă",
+            data_ora: new Date().toISOString(),
+            user_username: activeUser.username,
+            user_nume: activeUser.nume_complet,
+          },
+        ]);
+        if (currentFisa && currentFisa.id === editId) {
+          currentFisa.factura_path = null;
+        }
+        refreshFacturaUI(null);
+      }
+
+      async function deleteFacturaRow(fisaId, facturaPath, btn) {
+        if (!facturaPath) return;
+        if (
+          !confirm(
+            "Sigur doriți să ștergeți factura atașată fișei " + fisaId + "?",
+          )
+        )
+          return;
+
+        await _supa.storage.from("facturi").remove([facturaPath]);
+        const { error } = await _supa
+          .from("fise")
+          .update({ factura_path: null })
+          .eq("id", fisaId);
+
+        if (error) {
+          alert("Eroare la ștergerea facturii: " + error.message);
+          return;
+        }
+        await _supa.from("fise_log").insert([
+          {
+            fisa_id: fisaId,
+            actiune: "factură ștearsă",
+            data_ora: new Date().toISOString(),
+            user_username: activeUser.username,
+            user_nume: activeUser.nume_complet,
+          },
+        ]);
+        if (currentFisa && currentFisa.id === fisaId) {
+          currentFisa.factura_path = null;
+        }
+        // Actualizează DOM direct: dezactivează butonul 👁 și butonul 🗑
+        const td = btn.closest("td");
+        const buttons = td.querySelectorAll("button");
+        const viewBtn = buttons[1];
+        const delBtn = buttons[2];
+        if (viewBtn) {
+          viewBtn.disabled = true;
+          viewBtn.className =
+            "factura-btn flex items-center justify-center bg-slate-200 text-slate-400 cursor-not-allowed rounded-lg transition active:scale-95";
+          viewBtn.title = "Nicio factură atașată";
+          viewBtn.setAttribute("onclick", "event.stopPropagation()");
+        }
+        if (delBtn) {
+          delBtn.disabled = true;
+          delBtn.className =
+            "factura-btn flex items-center justify-center bg-slate-200 text-slate-400 cursor-not-allowed rounded-lg transition active:scale-95";
+          delBtn.title = "Nicio factură atașată";
+          delBtn.setAttribute("onclick", "event.stopPropagation()");
+        }
+      }
+
+      function triggerFacturaUploadRow(fisaId, btn) {
+        const input = btn.closest("td").querySelector(".factura-row-input");
+        if (input) input.click();
+      }
+
+      function viewFacturaRow(facturaPath) {
+        if (!facturaPath) return;
+        const { data } = _supa.storage
+          .from("facturi")
+          .getPublicUrl(facturaPath);
+        if (data && data.publicUrl) {
+          window.open(data.publicUrl, "_blank");
+        } else {
+          alert("Nu s-a putut genera URL-ul pentru factură.");
+        }
+      }
+
+      async function handleFacturaRowUpload(event, fisaId, inputEl) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+
+        const allowed = [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "image/gif",
+          "application/pdf",
+        ];
+        if (!allowed.includes(file.type)) {
+          alert(
+            "Tip fișier neacceptat. Folosiți imagine (JPG, PNG, WEBP) sau PDF.",
+          );
+          inputEl.value = "";
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          alert(
+            "Fișierul este prea mare. Dimensiunea maximă acceptată este 10 MB.",
+          );
+          inputEl.value = "";
+          return;
+        }
+
+        const ext = file.name.split(".").pop().toLowerCase();
+        const storagePath = fisaId + "/factura." + ext;
+
+        // Verifică dacă există deja un fișier vechi și îl șterge
+        const { data: existing } = await _supa
+          .from("fise")
+          .select("factura_path")
+          .eq("id", fisaId)
+          .maybeSingle();
+        if (existing && existing.factura_path) {
+          await _supa.storage.from("facturi").remove([existing.factura_path]);
+        }
+
+        const addBtn = inputEl
+          .closest("td")
+          .querySelector("button:first-of-type");
+        if (addBtn) {
+          addBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>`;
+          addBtn.classList.add("animate-spin");
+        }
+
+        const { error: uploadError } = await _supa.storage
+          .from("facturi")
+          .upload(storagePath, file, { upsert: true, contentType: file.type });
+
+        if (uploadError) {
+          if (addBtn) {
+            addBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`;
+            addBtn.classList.remove("animate-spin");
+          }
+          inputEl.value = "";
+          alert("Eroare la încărcare: " + uploadError.message);
+          return;
+        }
+
+        const { error: dbError } = await _supa
+          .from("fise")
+          .update({ factura_path: storagePath })
+          .eq("id", fisaId);
+
+        if (dbError) {
+          alert(
+            "Fișierul a fost încărcat dar nu s-a putut salva calea în baza de date: " +
+              dbError.message,
+          );
+        } else {
+          await _supa.from("fise_log").insert([
+            {
+              fisa_id: fisaId,
+              actiune: "factură atașată",
+              data_ora: new Date().toISOString(),
+              user_username: activeUser.username,
+              user_nume: activeUser.nume_complet,
+            },
+          ]);
+          // Actualizează butonul 👁 din celulă direct, fără reload pagină
+          const td = inputEl.closest("td");
+          const viewBtn = td.querySelectorAll("button")[1];
+          const delBtn = td.querySelectorAll("button")[2];
+          if (viewBtn) {
+            viewBtn.disabled = false;
+            viewBtn.className =
+              "factura-btn flex items-center justify-center bg-slate-600 hover:bg-blue-700 text-white cursor-pointer rounded-lg transition active:scale-95";
+            viewBtn.title = "Vizualizează factura";
+            viewBtn.setAttribute(
+              "onclick",
+              `event.stopPropagation(); viewFacturaRow('${storagePath}')`,
+            );
+          }
+          if (delBtn) {
+            delBtn.disabled = false;
+            delBtn.className =
+              "factura-btn flex items-center justify-center bg-red-600 hover:bg-red-700 text-white cursor-pointer rounded-lg transition active:scale-95";
+            delBtn.title = "Șterge factura";
+            delBtn.setAttribute(
+              "onclick",
+              `event.stopPropagation(); deleteFacturaRow('${fisaId}', '${storagePath}', this)`,
+            );
+          }
+          // Resetează butonul +
+          if (addBtn) {
+            addBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`;
+            addBtn.classList.remove("animate-spin");
+          }
+          // Actualizează și currentFisa dacă e deschisă
+          if (currentFisa && currentFisa.id === fisaId) {
+            currentFisa.factura_path = storagePath;
+          }
+        }
+        inputEl.value = "";
+      }
+
+      // ── END FACTURA STORAGE ──────────────────────────────────────────────
     </script>
     <div
       id="modal-archive"
