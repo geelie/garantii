@@ -1256,7 +1256,7 @@
                 class="imagini-btn flex items-center justify-center rounded-lg transition active:scale-95 ${f.imagini_count > 0 ? "bg-slate-900 hover:bg-slate-700 text-white cursor-pointer" : "bg-slate-400 hover:bg-blue-700 text-white cursor-pointer"}"
                 style="width:28px;height:28px;padding:0;flex-shrink:0;"
                 title="${f.imagini_count > 0 ? `Vezi imagini (${f.imagini_count})` : "Vezi imagini"}"
-                onclick="openImaginiModal('${f.id}')">
+                onclick="openImaginiModal('${f.id}', '${f.status}')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
             </button>`
                 : `<button type="button" disabled
@@ -3010,6 +3010,7 @@
       // ── IMAGINI STORAGE ──────────────────────────────────────────────────
 
       let _imaginiCurrentFisaId = null;
+      let _imaginiCurrentStatus = null;
 
       function triggerImaginiUpload(fisaId, btn) {
         const input = btn.closest("td").querySelector(".imagini-row-input");
@@ -3093,8 +3094,9 @@
         }
       }
 
-      async function openImaginiModal(fisaId) {
+      async function openImaginiModal(fisaId, fisaStatus) {
         _imaginiCurrentFisaId = fisaId;
+        _imaginiCurrentStatus = fisaStatus || null;
         document.getElementById("imagini-modal-fisa-id").textContent = fisaId;
         document.getElementById("imagini-grid").innerHTML =
           `<p class="text-slate-400 text-xs font-bold col-span-3 text-center py-8">Se încarcă imaginile...</p>`;
@@ -3106,6 +3108,7 @@
         document.getElementById("modal-imagini").classList.add("hidden");
         document.getElementById("imagini-grid").innerHTML = "";
         _imaginiCurrentFisaId = null;
+        _imaginiCurrentStatus = null;
       }
 
       async function loadImaginiGrid(fisaId) {
@@ -3133,7 +3136,7 @@
         grid.innerHTML = data
           .map((item, idx) => {
             const url = _imaginiUrls[idx];
-            const canDelete = activeUser.rol === "admin";
+            const canDelete = activeUser.rol === "admin" || _imaginiCurrentStatus === "În lucru";
             return `<div class="relative group rounded-xl overflow-hidden border-2 border-slate-200 bg-slate-100" style="aspect-ratio:1;">
             <img src="${url}" alt="Imagine ${idx + 1}"
               class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition"
@@ -3320,7 +3323,7 @@
               .getPublicUrl(storagePath);
             const url = urlData.publicUrl;
             const fileName = storagePath.split("/").pop();
-            const canDelete = activeUser.rol === "admin";
+            const canDelete = activeUser.rol === "admin" || _imaginiCurrentStatus === "În lucru";
             _imaginiUrls.push(url);
             const newIdx = _imaginiUrls.length - 1;
             const card = document.createElement("div");
