@@ -3709,8 +3709,9 @@ ${f.tip_garantie === "In garantie" ? renderPieseSection(f, true) : ""}
         for (let i = 1; i <= MAX_DEVIZ_ROWS; i++) {
           const den = f[`deviz_den_${i}`];
           const um = f[`deviz_um_${i}`];
+          const umText = f[`deviz_um_text_${i}`];
           const pret = f[`deviz_pret_${i}`];
-          if (!den && !um && !pret) continue;
+          if (!den && !um && !pret && !umText) continue;
           const ptotal = (parseFloat(um) || 0) * (parseFloat(pret) || 0);
           total += ptotal;
           const tr = document.createElement("tr");
@@ -3718,6 +3719,7 @@ ${f.tip_garantie === "In garantie" ? renderPieseSection(f, true) : ""}
           tr.innerHTML = `
             <td style="padding:4px 7px; border:1px solid #94a3b8;">${den || ""}</td>
             <td style="padding:4px 7px; border:1px solid #94a3b8; text-align:center;">${um != null ? um : ""}</td>
+            <td style="padding:4px 7px; border:1px solid #94a3b8; text-align:center;">${umText || ""}</td>
             <td style="padding:4px 7px; border:1px solid #94a3b8; text-align:center;">${pret != null ? pret : ""}</td>
             <td style="padding:4px 7px; border:1px solid #94a3b8; text-align:center; font-weight:700;">${ptotal > 0 ? ptotal.toFixed(2) : ""}</td>
           `;
@@ -3747,14 +3749,15 @@ ${f.tip_garantie === "In garantie" ? renderPieseSection(f, true) : ""}
         for (let i = 1; i <= MAX_DEVIZ_ROWS; i++) {
           const den = f[`deviz_den_${i}`];
           const um = f[`deviz_um_${i}`];
+          const umText = f[`deviz_um_text_${i}`];
           const pret = f[`deviz_pret_${i}`];
-          if (den || um || pret) {
-            _addDevizRowHTML(den, um, pret);
+          if (den || um || umText || pret) {
+            _addDevizRowHTML(den, um, umText, pret);
             hasRows = true;
           }
         }
         // Dacă nu există rânduri, adăugăm primul gol
-        if (!hasRows) _addDevizRowHTML("", "", "");
+        if (!hasRows) _addDevizRowHTML("", "", "", "");
 
         document.getElementById("deviz-form-area").style.display = "block";
       }
@@ -3764,22 +3767,24 @@ ${f.tip_garantie === "In garantie" ? renderPieseSection(f, true) : ""}
           alert(`Maxim ${MAX_DEVIZ_ROWS} rânduri permise.`);
           return;
         }
-        _addDevizRowHTML("", "", "");
+        _addDevizRowHTML("", "", "", "");
       }
 
-      function _addDevizRowHTML(den, um, pret) {
+      function _addDevizRowHTML(den, um, umText, pret) {
         _devizRowCount++;
         const idx = _devizRowCount;
         const cont = document.getElementById("deviz-rows-edit");
         const div = document.createElement("div");
         div.id = `deviz-row-edit-${idx}`;
         div.style.cssText =
-          "display:grid; grid-template-columns:3fr 1fr 1fr 1fr auto; gap:4px; align-items:center;";
+          "display:grid; grid-template-columns:3fr 1fr 1fr 1fr 1fr auto; gap:4px; align-items:center;";
         div.innerHTML = `
           <input type="text" id="deviz-den-${idx}" value="${den || ""}" placeholder="Denumire piesă / lucrare"
             style="padding:4px 6px; border:1px solid #cbd5e1; border-radius:4px; font-size:10px; font-weight:600;">
-          <input type="number" id="deviz-um-${idx}" value="${um != null ? um : ""}" placeholder="Buc./ore" min="0" step="0.01"
+          <input type="number" id="deviz-um-${idx}" value="${um != null ? um : ""}" placeholder="Cantitate" min="0" step="0.01"
             oninput="_recalcDevizRow(${idx})"
+            style="padding:4px 6px; border:1px solid #cbd5e1; border-radius:4px; font-size:10px; font-weight:600; text-align:center;">
+          <input type="text" id="deviz-um-text-${idx}" value="${umText || ""}" placeholder="U.M."
             style="padding:4px 6px; border:1px solid #cbd5e1; border-radius:4px; font-size:10px; font-weight:600; text-align:center;">
           <input type="number" id="deviz-pret-${idx}" value="${pret != null ? pret : ""}" placeholder="Preț unit." min="0" step="0.01"
             oninput="_recalcDevizRow(${idx})"
@@ -3834,6 +3839,8 @@ ${f.tip_garantie === "In garantie" ? renderPieseSection(f, true) : ""}
           update[`deviz_um_${rIdx}`] =
             parseFloat(document.getElementById(`deviz-um-${id}`)?.value) ||
             null;
+          update[`deviz_um_text_${rIdx}`] =
+            document.getElementById(`deviz-um-text-${id}`)?.value || null;
           update[`deviz_pret_${rIdx}`] =
             parseFloat(document.getElementById(`deviz-pret-${id}`)?.value) ||
             null;
@@ -3842,6 +3849,7 @@ ${f.tip_garantie === "In garantie" ? renderPieseSection(f, true) : ""}
         for (let i = rIdx + 1; i <= MAX_DEVIZ_ROWS; i++) {
           update[`deviz_den_${i}`] = null;
           update[`deviz_um_${i}`] = null;
+          update[`deviz_um_text_${i}`] = null;
           update[`deviz_pret_${i}`] = null;
         }
 
@@ -3886,6 +3894,7 @@ ${f.tip_garantie === "In garantie" ? renderPieseSection(f, true) : ""}
         for (let i = 1; i <= MAX_DEVIZ_ROWS; i++) {
           nullUpdate[`deviz_den_${i}`] = null;
           nullUpdate[`deviz_um_${i}`] = null;
+          nullUpdate[`deviz_um_text_${i}`] = null;
           nullUpdate[`deviz_pret_${i}`] = null;
         }
         const { error } = await _supa
@@ -4421,18 +4430,29 @@ ${f.tip_garantie === "In garantie" ? renderPieseSection(f, true) : ""}
                   padding: 5px 7px;
                   border: 1px solid #334155;
                   font-size: 10px;
-                  width: 15%;
+                  width: 10%;
                   text-align: center;
                 "
               >
-                U.M.<br />(Buc./ore)
+                Cantitate
               </th>
               <th
                 style="
                   padding: 5px 7px;
                   border: 1px solid #334155;
                   font-size: 10px;
-                  width: 18%;
+                  width: 10%;
+                  text-align: center;
+                "
+              >
+                U.M.
+              </th>
+              <th
+                style="
+                  padding: 5px 7px;
+                  border: 1px solid #334155;
+                  font-size: 10px;
+                  width: 16%;
                   text-align: center;
                 "
               >
@@ -4443,7 +4463,7 @@ ${f.tip_garantie === "In garantie" ? renderPieseSection(f, true) : ""}
                   padding: 5px 7px;
                   border: 1px solid #334155;
                   font-size: 10px;
-                  width: 19%;
+                  width: 16%;
                   text-align: center;
                 "
               >
